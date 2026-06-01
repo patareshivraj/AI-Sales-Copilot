@@ -4,6 +4,7 @@ from agents.prospect_finder import ProspectFinderAgent
 from agents.company_researcher import CompanyResearcherAgent
 from agents.qualification_agent import QualificationAgent
 from agents.buyer_fit_agent import BuyerFitAgent
+from agents.contact_discovery_agent import ContactDiscoveryAgent
 from agents.outreach_agent import OutreachAgent
 from agents.sequencer_agent import SequencerAgent
 
@@ -14,6 +15,7 @@ class SalesCopilotWorkflow:
         self.researcher = CompanyResearcherAgent()
         self.qualifier = QualificationAgent()
         self.buyer_fit_agent = BuyerFitAgent()
+        self.contact_agent = ContactDiscoveryAgent()
         self.outreach_agent = OutreachAgent()
         self.sequencer_agent = SequencerAgent()
 
@@ -56,8 +58,17 @@ class SalesCopilotWorkflow:
 
             outreach_data = None
             sequence_data = None
+            contact_data = None
             
             if buyer_fit.outreach_allowed and qualified.tier != "Cold":
+                print("\n--- Phase 6: CONTACT DISCOVERY ---")
+                contact = self.contact_agent.find_contact(p.company, icp)
+                contact_data = contact.model_dump()
+                if contact.contact_name:
+                    print(f"Found Decision Maker: {contact.contact_name} ({contact.title})")
+                else:
+                    print("No verified decision maker found (Not Found).")
+
                 print("\n--- Phase 7: OUTREACH GENERATION ---")
                 outreach = self.outreach_agent.draft_outreach(research, qualified)
                 outreach_data = outreach.model_dump()
@@ -78,6 +89,7 @@ class SalesCopilotWorkflow:
                 "buyer_fit": buyer_fit.model_dump(),
                 "research": research.model_dump(),
                 "qualification": qualified.model_dump(),
+                "contact": contact_data,
                 "outreach": outreach_data,
                 "sequence": sequence_data
             })
