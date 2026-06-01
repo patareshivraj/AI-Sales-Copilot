@@ -29,57 +29,111 @@ Built with a strict engineering philosophy: deterministic scoring, zero hallucin
 
 The system implements a sequential, gate-controlled pipeline. Each agent receives strictly typed Pydantic input, performs its task, and emits strictly typed Pydantic output. No agent communicates with another agent directly. All data flows through the central orchestrator.
 
-```
-User Query
-     |
-     v
-ICP Builder Agent
-     |
-     v
-Prospect Finder Agent
-     |
-     v
-Company Research Agent
-     |
-     v
-Qualification Agent (Deterministic Scoring)
-     |
-     v
-Buyer Fit Agent (Competitor/Partner/Customer Classification)
-     |
-     v
-Opportunity Intelligence Agent (Why Now?)
-     |
-     v
-[GATE] Is research sufficient?
-     |--- NO ---> blocked_reason: INSUFFICIENT_RESEARCH
-     |
-[GATE] Is prospect Cold?
-     |--- YES --> blocked_reason: COLD_PROSPECT
-     |
-[GATE] Is prospect a Competitor?
-     |--- YES --> blocked_reason: COMPETITOR
-     |
-[GATE] Is buyer fit too low?
-     |--- YES --> blocked_reason: LOW_BUYER_FIT
-     |
-     v
-Contact Discovery Agent
-     |
-[GATE] Was a verified contact found?
-     |--- NO ---> blocked_reason: NO_VERIFIED_CONTACT
-     |
-     v
-Outreach Agent
-     |
-     v
-Follow-Up Sequencer Agent
-     |
-     v
-Final Report (JSON + CSV + Markdown)
+### High-Level Agent Pipeline
+
+```mermaid
+graph TD
+    A["User Query"] --> B["ICP Builder Agent"]
+    B -->|"Structured ICP JSON"| C["Prospect Finder Agent"]
+    C -->|"Company Names + URLs"| D["Company Research Agent"]
+    D -->|"Scraped Intelligence"| E["Qualification Agent"]
+    E -->|"Deterministic Score"| F["Buyer Fit Agent"]
+    F -->|"Customer / Competitor / Partner"| G["Opportunity Intelligence Agent"]
+    G -->|"Why Now Signals"| H["Gate Controller"]
+    H -->|"Passed All Gates"| I["Contact Discovery Agent"]
+    I -->|"Verified Contact"| J["Outreach Agent"]
+    J -->|"Cold Email + LinkedIn"| K["Follow-Up Sequencer"]
+    K --> L["Final Report"]
+
+    subgraph "Core Abstraction"
+        LLM["LLM Service (core/llm.py)"]
+    end
+
+    B -.->|"generate_structured()"| LLM
+    D -.->|"generate_structured()"| LLM
+    E -.->|"Reasoning Only"| LLM
+    F -.->|"Classification"| LLM
+    G -.->|"Signal Analysis"| LLM
+    I -.->|"Contact Extraction"| LLM
+    J -.->|"Email Drafting"| LLM
+    K -.->|"Sequence Generation"| LLM
+
+    style LLM fill:#1a1a2e,stroke:#e94560,color:#fff
+    style L fill:#0f3460,stroke:#e94560,color:#fff
+    style A fill:#16213e,stroke:#0f3460,color:#fff
 ```
 
-Every prospect that fails a gate is tagged with a machine-readable `blocked_reason` code. No outreach is ever generated for a blocked prospect.
+### Gate-Controlled Decision Flowchart
+
+Every prospect passes through a series of sequential gates. Failure at any gate blocks outreach and tags the prospect with a machine-readable `blocked_reason` code.
+
+```mermaid
+flowchart TD
+    START["Prospect Researched and Qualified"] --> G1{"Research Sufficient?"}
+
+    G1 -->|"No"| B1["BLOCKED: INSUFFICIENT_RESEARCH"]
+    G1 -->|"Yes"| G2{"Qualification Tier?"}
+
+    G2 -->|"Cold"| B2["BLOCKED: COLD_PROSPECT"]
+    G2 -->|"Warm / Hot"| G3{"Competitor?"}
+
+    G3 -->|"Yes"| B3["BLOCKED: COMPETITOR"]
+    G3 -->|"No"| G4{"Buyer Fit Allowed?"}
+
+    G4 -->|"No"| B4["BLOCKED: LOW_BUYER_FIT"]
+    G4 -->|"Yes"| CD["Contact Discovery Agent"]
+
+    CD --> G5{"Verified Contact Found?"}
+
+    G5 -->|"No"| B5["BLOCKED: NO_VERIFIED_CONTACT"]
+    G5 -->|"Yes"| OA["Outreach Agent"]
+
+    OA --> SEQ["Follow-Up Sequencer"]
+    SEQ --> REPORT["Final Report Generated"]
+
+    B1 --> MR["Manual Review Queue"]
+    B2 --> MR
+    B3 --> MR
+    B4 --> MR
+    B5 --> MR
+
+    style B1 fill:#e94560,stroke:#1a1a2e,color:#fff
+    style B2 fill:#e94560,stroke:#1a1a2e,color:#fff
+    style B3 fill:#e94560,stroke:#1a1a2e,color:#fff
+    style B4 fill:#e94560,stroke:#1a1a2e,color:#fff
+    style B5 fill:#e94560,stroke:#1a1a2e,color:#fff
+    style REPORT fill:#0f3460,stroke:#e94560,color:#fff
+    style MR fill:#533483,stroke:#e94560,color:#fff
+    style OA fill:#16213e,stroke:#0f3460,color:#fff
+    style SEQ fill:#16213e,stroke:#0f3460,color:#fff
+    style CD fill:#16213e,stroke:#0f3460,color:#fff
+```
+
+### Data Flow Between Schemas
+
+```mermaid
+graph LR
+    A["ICPProfile"] -->|"industries, keywords, market_type"| B["ProspectList"]
+    B -->|"company, website"| C["CompanyResearch"]
+    C -->|"industry, signals, ai_readiness"| D["Qualification"]
+    A -->|"industries"| D
+    C -->|"services, industry"| E["BuyerFit"]
+    C -->|"signals, pain_points"| F["OpportunityIntelligence"]
+    D -->|"score, tier, reasoning"| F
+    A -->|"decision_makers"| G["Contact"]
+    C -->|"signals, pain_points"| H["Outreach"]
+    D -->|"reasoning"| H
+    H -->|"cold_email"| I["FollowUpSequence"]
+    C -->|"services, signals"| I
+
+    style A fill:#1a1a2e,stroke:#e94560,color:#fff
+    style D fill:#0f3460,stroke:#e94560,color:#fff
+    style E fill:#533483,stroke:#e94560,color:#fff
+    style G fill:#16213e,stroke:#0f3460,color:#fff
+    style H fill:#16213e,stroke:#0f3460,color:#fff
+```
+
+No outreach is ever generated for a blocked prospect. Every blocked prospect carries an auditable reason code.
 
 ---
 
