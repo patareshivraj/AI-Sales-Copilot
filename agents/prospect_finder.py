@@ -35,7 +35,7 @@ class ProspectFinderAgent:
         queries = []
         # Build search queries from keywords and market type
         # E.g., '"digital transformation" companies India'
-        target_keywords = icp.keywords[:3] if icp.keywords else icp.industries[:2]
+        target_keywords = icp.keywords[:1] if icp.keywords else icp.industries[:1]
         market = icp.market_type if icp.market_type else "Global"
         
         for kw in target_keywords:

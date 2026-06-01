@@ -1,6 +1,6 @@
 from schemas.icp_schema import ICPProfile
 from schemas.research_schema import CompanyResearch
-from schemas.qualification_schema import Qualification
+from schemas.qualification_schema import Qualification, ScoreBreakdown
 from core.llm import LLMService
 
 QUALIFICATION_PROMPT = """You are an expert Sales Qualification Agent.
@@ -88,17 +88,21 @@ class QualificationAgent:
             # Post-process: Enforce deterministic scores regardless of what LLM outputs
             response.score = score
             response.tier = tier
-            response.industry_match = industry_match
-            response.ai_readiness_score = ai_readiness_score
-            response.signal_score = signal_score
+            response.score_breakdown = ScoreBreakdown(
+                industry_match=30 if industry_match else 0,
+                ai_readiness=ai_readiness_score,
+                signals=signal_score
+            )
             
             return response
         except Exception as e:
             return Qualification(
                 score=score,
                 tier=tier,
-                industry_match=industry_match,
-                ai_readiness_score=ai_readiness_score,
-                signal_score=signal_score,
+                score_breakdown=ScoreBreakdown(
+                    industry_match=30 if industry_match else 0,
+                    ai_readiness=ai_readiness_score,
+                    signals=signal_score
+                ),
                 reasoning=f"LLM Error generating reasoning: {e}"
             )
