@@ -27,8 +27,7 @@ class SalesCopilotWorkflow:
         print("\n=== STEP 1: ICP GENERATED ===")
         icp = self.icp_builder.build_icp(query)
         if icp.error:
-            print(f"Error building ICP: {icp.error}")
-            return None
+            raise Exception(f"Failed to generate ICP: {icp.error}")
         print(f"Target Industries: {icp.industries}")
         print(f"Market Type: {icp.market_type}")
         print(f"Keywords: {icp.keywords}")

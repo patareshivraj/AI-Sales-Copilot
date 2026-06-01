@@ -6,12 +6,13 @@
         "verified_contacts": 0,
         "outreach_generated": 0,
         "blocked_funnel": {
-            "INSUFFICIENT_RESEARCH": 5
+            "COLD_PROSPECT": 2,
+            "INSUFFICIENT_RESEARCH": 3
         }
     },
     "top_opportunity": {
-        "company": "SAP",
-        "website": "https://www.sap.com",
+        "company": "Digital Nisar",
+        "website": "https://digitalnisar.in/",
         "qualification_score": 0,
         "qualification_tier": "Cold",
         "blocked_reason": "INSUFFICIENT_RESEARCH",
@@ -25,8 +26,8 @@
             "disqualification_reason": ""
         },
         "research": {
-            "company": "SAP",
-            "website": "https://www.sap.com",
+            "company": "Digital Nisar",
+            "website": "https://digitalnisar.in/",
             "industry": null,
             "summary": null,
             "services": [],
@@ -44,7 +45,7 @@
                 "ai_readiness": 0,
                 "signals": 0
             },
-            "reasoning": "SAP received a score of 0 due to the lack of information regarding their AI readiness and growth signals. Additionally, they do not match our Ideal Customer Profile (ICP) based on industry, resulting in a 'Cold' tier qualification."
+            "reasoning": "Digital Nisar received a score of 0 due to the lack of information regarding their AI readiness and growth signals, coupled with the fact that they do not match our Ideal Customer Profile (ICP) in terms of industry. This suggests that they may not be a suitable fit for our solutions at this time."
         },
         "opportunity": null,
         "contact": null,

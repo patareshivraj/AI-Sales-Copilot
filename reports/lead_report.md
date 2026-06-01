@@ -10,13 +10,14 @@
 
 | Reason | Count |
 |---|---|
-| INSUFFICIENT_RESEARCH | 5 |
+| INSUFFICIENT_RESEARCH | 3 |
+| COLD_PROSPECT | 2 |
 
 ## Top Opportunity
 
-- **Company**: SAP
+- **Company**: Digital Nisar
 - **Score**: 0 (Cold)
 - **Buyer Fit**: Low
 
 
-**Qualification Reasoning**: SAP received a score of 0 due to the lack of information regarding their AI readiness and growth signals. Additionally, they do not match our Ideal Customer Profile (ICP) based on industry, resulting in a 'Cold' tier qualification.
+**Qualification Reasoning**: Digital Nisar received a score of 0 due to the lack of information regarding their AI readiness and growth signals, coupled with the fact that they do not match our Ideal Customer Profile (ICP) in terms of industry. This suggests that they may not be a suitable fit for our solutions at this time.
