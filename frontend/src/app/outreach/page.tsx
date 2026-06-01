@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Mail } from "lucide-react";
 
+import { getSavedReport } from "@/lib/storage";
+
 export default function OutreachPage() {
   const [prospects, setProspects] = useState<any[]>([]);
   useEffect(() => {
-    const data = localStorage.getItem("latest_report");
-    if (data) { const r = JSON.parse(data); if (r?.prospects) setProspects(r.prospects); }
+    const r = getSavedReport();
+    if (r?.prospects) setProspects(r.prospects);
   }, []);
   const withOutreach = prospects.filter((p) => p.outreach);
   return (

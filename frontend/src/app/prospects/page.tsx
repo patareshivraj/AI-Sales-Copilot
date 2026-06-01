@@ -6,15 +6,14 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
+import { getSavedReport } from "@/lib/storage";
+
 export default function ProspectDiscovery() {
   const [prospects, setProspects] = useState<any[]>([]);
 
   useEffect(() => {
-    const data = localStorage.getItem("latest_report");
-    if (data) {
-      const report = JSON.parse(data);
-      if (report?.prospects) setProspects(report.prospects);
-    }
+    const report = getSavedReport();
+    if (report?.prospects) setProspects(report.prospects);
   }, []);
 
   return (

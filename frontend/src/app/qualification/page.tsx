@@ -4,15 +4,14 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+import { getSavedReport } from "@/lib/storage";
+
 export default function QualificationPage() {
   const [prospects, setProspects] = useState<any[]>([]);
 
   useEffect(() => {
-    const data = localStorage.getItem("latest_report");
-    if (data) {
-      const report = JSON.parse(data);
-      if (report?.prospects) setProspects(report.prospects);
-    }
+    const report = getSavedReport();
+    if (report?.prospects) setProspects(report.prospects);
   }, []);
 
   const hotCount = prospects.filter((p) => p.qualification_tier === "Hot").length;

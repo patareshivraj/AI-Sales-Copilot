@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Users } from "lucide-react";
 
+import { getSavedReport } from "@/lib/storage";
+
 export default function ContactsPage() {
   const [prospects, setProspects] = useState<any[]>([]);
   useEffect(() => {
-    const data = localStorage.getItem("latest_report");
-    if (data) { const r = JSON.parse(data); if (r?.prospects) setProspects(r.prospects); }
+    const r = getSavedReport();
+    if (r?.prospects) setProspects(r.prospects);
   }, []);
   const withContacts = prospects.filter((p) => p.contacts && p.contacts.length > 0);
   return (

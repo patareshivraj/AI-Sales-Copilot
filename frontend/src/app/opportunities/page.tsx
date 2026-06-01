@@ -5,11 +5,13 @@ import { CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
+import { getSavedReport } from "@/lib/storage";
+
 export default function OpportunitiesPage() {
   const [prospects, setProspects] = useState<any[]>([]);
   useEffect(() => {
-    const data = localStorage.getItem("latest_report");
-    if (data) { const r = JSON.parse(data); if (r?.prospects) setProspects(r.prospects); }
+    const r = getSavedReport();
+    if (r?.prospects) setProspects(r.prospects);
   }, []);
   const withOpp = prospects.filter((p) => p.opportunity);
   return (

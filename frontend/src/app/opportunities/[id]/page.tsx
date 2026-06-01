@@ -28,14 +28,15 @@ function SectionHeader({ title, confidence }: { title: string, confidence?: numb
   );
 }
 
+import { getSavedReport } from "@/lib/storage";
+
 export default function CompanyDetail() {
   const params = useParams();
   const [prospect, setProspect] = useState<any>(null);
 
   useEffect(() => {
-    const data = localStorage.getItem('latest_report');
-    if (data) {
-      const report = JSON.parse(data);
+    const report = getSavedReport();
+    if (report) {
       const index = parseInt(params.id as string);
       if (report.prospects && report.prospects[index]) {
         setProspect(report.prospects[index]);

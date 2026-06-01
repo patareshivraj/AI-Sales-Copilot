@@ -53,7 +53,9 @@ export default function Dashboard() {
             setReport(finalData.report);
             setStatus("completed");
             // Save to local storage for the details page
-            localStorage.setItem('latest_report', JSON.stringify(finalData.report));
+            if (finalData.report) {
+              localStorage.setItem('latest_report', JSON.stringify(finalData.report));
+            }
           } else if (data.status === "failed") {
             setStatus("failed");
           }

@@ -4,11 +4,12 @@ import { motion } from "framer-motion";
 import { Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { getSavedReport } from "@/lib/storage";
+
 export default function ReportsPage() {
   const [report, setReport] = useState<any>(null);
   useEffect(() => {
-    const data = localStorage.getItem("latest_report");
-    if (data) setReport(JSON.parse(data));
+    setReport(getSavedReport());
   }, []);
 
   if (!report) {
