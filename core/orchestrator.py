@@ -7,6 +7,7 @@ from agents.buyer_fit_agent import BuyerFitAgent
 from agents.contact_discovery_agent import ContactDiscoveryAgent
 from agents.outreach_agent import OutreachAgent
 from agents.sequencer_agent import SequencerAgent
+from agents.opportunity_agent import OpportunityAgent
 
 class SalesCopilotWorkflow:
     def __init__(self):
@@ -18,6 +19,7 @@ class SalesCopilotWorkflow:
         self.contact_agent = ContactDiscoveryAgent()
         self.outreach_agent = OutreachAgent()
         self.sequencer_agent = SequencerAgent()
+        self.opportunity_agent = OpportunityAgent()
 
     def run(self, query: str):
         print("\n=== STEP 1: ICP GENERATED ===")
@@ -30,8 +32,6 @@ class SalesCopilotWorkflow:
         print(f"Keywords: {icp.keywords}")
 
         print("\n=== STEP 2: PROSPECTS FOUND ===")
-        # Limiting to 5 for speed during testing, 
-        # though the user recommended 10-20 overall
         prospect_list = self.prospect_finder.find_prospects(icp, limit=5)
         print(f"Discovered {len(prospect_list.prospects)} prospects matching the criteria.")
 
@@ -56,11 +56,35 @@ class SalesCopilotWorkflow:
             print(f"Buyer Fit: {buyer_fit.buyer_fit} | Type: {buyer_fit.buyer_type}")
             print(f"Is Competitor: {buyer_fit.competitor_flag}")
 
+            # Opportunity Intelligence runs for all researched prospects
+            opportunity_data = None
+            if research.status == "Success":
+                print("\n--- Phase 12: OPPORTUNITY INTELLIGENCE ---")
+                opportunity = self.opportunity_agent.analyze(research, qualified)
+                opportunity_data = opportunity.model_dump()
+                print(f"Urgency: {opportunity.urgency}")
+                print(f"Why Now: {opportunity.why_now}")
+
+            # Blocked Reason tracking
             outreach_data = None
             sequence_data = None
             contact_data = None
+            blocked_reason = None
             
-            if buyer_fit.outreach_allowed and qualified.tier != "Cold":
+            if research.status != "Success":
+                blocked_reason = "INSUFFICIENT_RESEARCH"
+                print(f"\n--- Blocked: {blocked_reason} ---")
+            elif qualified.tier == "Cold":
+                blocked_reason = "COLD_PROSPECT"
+                print(f"\n--- Blocked: {blocked_reason} ---")
+            elif buyer_fit.competitor_flag:
+                blocked_reason = "COMPETITOR"
+                print(f"\n--- Blocked: {blocked_reason} ---")
+            elif not buyer_fit.outreach_allowed:
+                blocked_reason = "LOW_BUYER_FIT"
+                print(f"\n--- Blocked: {blocked_reason} ---")
+            else:
+                # Passed all gates, attempt contact discovery
                 print("\n--- Phase 6: CONTACT DISCOVERY ---")
                 contact = self.contact_agent.find_contact(p.company, icp)
                 contact_data = contact.model_dump()
@@ -78,19 +102,19 @@ class SalesCopilotWorkflow:
                     sequence_data = sequence.model_dump()
                     print("5-Step Sequence generated successfully.")
                 else:
+                    blocked_reason = "NO_VERIFIED_CONTACT"
                     print("No verified decision maker found. Manual Review Required.")
-                    print("\n--- Skipping Outreach (No Contact Discovered) ---")
-            else:
-                print(f"\n--- Skipping Outreach ({buyer_fit.disqualification_reason} or Cold Tier) ---")
 
             final_report["prospects"].append({
                 "company": p.company,
                 "website": p.website,
                 "qualification_score": qualified.score,
                 "qualification_tier": qualified.tier,
+                "blocked_reason": blocked_reason,
                 "buyer_fit": buyer_fit.model_dump(),
                 "research": research.model_dump(),
                 "qualification": qualified.model_dump(),
+                "opportunity": opportunity_data,
                 "contact": contact_data,
                 "outreach": outreach_data,
                 "sequence": sequence_data

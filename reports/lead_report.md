@@ -1,14 +1,14 @@
 # AI Sales Copilot Lead Report
 
 - **Total Prospects Found**: 5
-- **Qualified Prospects**: 2
-- **High Fit Buyers**: 1
+- **Qualified Prospects**: 3
+- **High Fit Buyers**: 2
 - **Verified Contacts**: 0
 - **Manual Review Required**: 5
 
 ## Top Opportunity
-**Company**: IPH Technologies
-**Score**: 15 (Cold)
+**Company**: SEESEC
+**Score**: 50 (Warm)
 **Buyer Fit**: Medium
 
-**Reasoning**: IPH Technologies received a score of 15 out of 100 due to their low AI readiness and lack of industry match with our Ideal Customer Profile (ICP). Although they exhibit strong growth signals at 90%, their limited AI adoption and non-aligned industry specialization hinder their potential as a viable prospect, resulting in a 'Cold' tier classification.
+**Reasoning**: The company SEESEC received a score of 50 due to its high AI readiness and strong growth signals, with 80% growth indication. However, the lack of industry match with our Ideal Customer Profile (ICP) significantly impacted the overall score. Their diverse range of services, including cloud migration, cloud optimization, cloud security, data analytics, and AI-driven solutions, demonstrates their adaptability and potential for innovation. Despite this, the absence of a clear industry alignment according to our ICP criteria limited the score from reaching its full potential. Thus, the company is categorized as 'Warm', indicating potential but requiring further evaluation to determine the best course of action.
