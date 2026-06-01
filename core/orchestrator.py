@@ -5,6 +5,7 @@ from agents.company_researcher import CompanyResearcherAgent
 from agents.qualification_agent import QualificationAgent
 from agents.buyer_fit_agent import BuyerFitAgent
 from agents.outreach_agent import OutreachAgent
+from agents.sequencer_agent import SequencerAgent
 
 class SalesCopilotWorkflow:
     def __init__(self):
@@ -14,6 +15,7 @@ class SalesCopilotWorkflow:
         self.qualifier = QualificationAgent()
         self.buyer_fit_agent = BuyerFitAgent()
         self.outreach_agent = OutreachAgent()
+        self.sequencer_agent = SequencerAgent()
 
     def run(self, query: str):
         print("\n=== STEP 1: ICP GENERATED ===")
@@ -53,13 +55,20 @@ class SalesCopilotWorkflow:
             print(f"Is Competitor: {buyer_fit.competitor_flag}")
 
             outreach_data = None
-            if not buyer_fit.competitor_flag and buyer_fit.buyer_fit != "Low" and qualified.tier != "Cold":
+            sequence_data = None
+            
+            if buyer_fit.outreach_allowed and qualified.tier != "Cold":
                 print("\n--- Phase 7: OUTREACH GENERATION ---")
                 outreach = self.outreach_agent.draft_outreach(research, qualified)
                 outreach_data = outreach.model_dump()
                 print("Outreach drafted successfully.")
+                
+                print("\n--- Phase 8: FOLLOW-UP SEQUENCER ---")
+                sequence = self.sequencer_agent.generate_sequence(research, outreach)
+                sequence_data = sequence.model_dump()
+                print("5-Step Sequence generated successfully.")
             else:
-                print("\n--- Skipping Outreach (Low Fit/Competitor/Cold) ---")
+                print(f"\n--- Skipping Outreach ({buyer_fit.disqualification_reason} or Cold Tier) ---")
 
             final_report["prospects"].append({
                 "company": p.company,
@@ -69,7 +78,8 @@ class SalesCopilotWorkflow:
                 "buyer_fit": buyer_fit.model_dump(),
                 "research": research.model_dump(),
                 "qualification": qualified.model_dump(),
-                "outreach": outreach_data
+                "outreach": outreach_data,
+                "sequence": sequence_data
             })
 
         print("\n=== STEP 5: FINAL REPORT GENERATED ===")

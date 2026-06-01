@@ -46,6 +46,17 @@ class BuyerFitAgent:
         try:
             response = self.llm.generate_structured(prompt, BuyerFit)
             if isinstance(response, BuyerFit):
+                # Post-process the block logic
+                if response.competitor_flag:
+                    response.outreach_allowed = False
+                    response.disqualification_reason = "Company provides overlapping services (Competitor)."
+                elif response.buyer_fit == "Low":
+                    response.outreach_allowed = False
+                    response.disqualification_reason = "Low buyer fit determined by ICP match."
+                else:
+                    response.outreach_allowed = True
+                    response.disqualification_reason = ""
+                    
                 return response
         except Exception as e:
             return BuyerFit(
