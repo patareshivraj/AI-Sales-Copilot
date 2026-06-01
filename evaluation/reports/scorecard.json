@@ -1,0 +1,8 @@
+{
+    "icp_accuracy": 100.0,
+    "qualification_consistency": 100.0,
+    "buyer_fit_precision": 100.0,
+    "research_accuracy": 92.0,
+    "hallucination_rate": 0.0,
+    "outreach_grounding": 100.0
+}

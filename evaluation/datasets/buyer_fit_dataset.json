@@ -1,0 +1,14 @@
+[
+  {
+    "company": "Deloitte",
+    "industry": "IT Consulting",
+    "services": ["AI Transformation", "Cloud Consulting", "Audit"],
+    "expected_competitor": true
+  },
+  {
+    "company": "Acme Manufacturing",
+    "industry": "Manufacturing",
+    "services": ["Automotive Parts", "Steel Production"],
+    "expected_competitor": false
+  }
+]
