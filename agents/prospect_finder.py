@@ -32,15 +32,16 @@ class ProspectFinderAgent:
         self.llm = LLMService()
 
     def find_prospects(self, icp: ICPProfile, limit: int = 15) -> ProspectList:
+        # Build varied search queries
+        import random
         queries = []
-        # Build search queries from keywords and market type
-        # E.g., '"digital transformation" companies India'
-        target_keywords = icp.keywords[:1] if icp.keywords else icp.industries[:1]
-        market = icp.market_type if icp.market_type else "Global"
-        
-        for kw in target_keywords:
-            query = f'"{kw}" companies {market}'
-            queries.append(query)
+        for kw in icp.keywords:
+            if icp.regions:
+                # Randomize the region attached to the keyword to ensure varied results across runs
+                region = random.choice(icp.regions)
+                queries.append(f'"{kw}" companies {icp.market_type} {region}')
+            else:
+                queries.append(f'"{kw}" companies {icp.market_type}')
             
         raw_results = []
         try:

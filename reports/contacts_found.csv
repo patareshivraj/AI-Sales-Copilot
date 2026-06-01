@@ -1,6 +1,6 @@
-Company,Website,Contact Name,Title,LinkedIn URL,Email,Score,Tier
-SEESEC,https://seesec.io/,,,,,50,Warm
-Bacancy,https://www.bacancy.com/,,,,,0,Cold
-InnovationM,https://www.innovationm.com/,,,,,50,Warm
-KORIX,https://korixinc.com/,,,,,50,Warm
-Invoidea,https://invoidea.com/,,,,,0,Cold
+Company,Website,Contact Name,Title,LinkedIn URL,Email,Score,Tier,Blocked Reason,Urgency
+SAP,https://www.sap.com,,,,,0,Cold,INSUFFICIENT_RESEARCH,
+Deloitte,https://www.deloitte.com,,,,,0,Cold,INSUFFICIENT_RESEARCH,
+Snowflake,https://www.snowflake.com,,,,,0,Cold,INSUFFICIENT_RESEARCH,
+Ecosystm,https://www.ecosystm.com,,,,,0,Cold,INSUFFICIENT_RESEARCH,
+Integral,https://www.gointegral.co,,,,,0,Cold,INSUFFICIENT_RESEARCH,

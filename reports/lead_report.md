@@ -1,14 +1,22 @@
 # AI Sales Copilot Lead Report
 
 - **Total Prospects Found**: 5
-- **Qualified Prospects**: 3
-- **High Fit Buyers**: 2
+- **Qualified Prospects**: 0
+- **High Fit Buyers**: 0
 - **Verified Contacts**: 0
-- **Manual Review Required**: 5
+- **Outreach Generated**: 0
+
+## Blocked Funnel
+
+| Reason | Count |
+|---|---|
+| INSUFFICIENT_RESEARCH | 5 |
 
 ## Top Opportunity
-**Company**: SEESEC
-**Score**: 50 (Warm)
-**Buyer Fit**: Medium
 
-**Reasoning**: The company SEESEC received a score of 50 due to its high AI readiness and strong growth signals, with 80% growth indication. However, the lack of industry match with our Ideal Customer Profile (ICP) significantly impacted the overall score. Their diverse range of services, including cloud migration, cloud optimization, cloud security, data analytics, and AI-driven solutions, demonstrates their adaptability and potential for innovation. Despite this, the absence of a clear industry alignment according to our ICP criteria limited the score from reaching its full potential. Thus, the company is categorized as 'Warm', indicating potential but requiring further evaluation to determine the best course of action.
+- **Company**: SAP
+- **Score**: 0 (Cold)
+- **Buyer Fit**: Low
+
+
+**Qualification Reasoning**: SAP received a score of 0 due to the lack of information regarding their AI readiness and growth signals. Additionally, they do not match our Ideal Customer Profile (ICP) based on industry, resulting in a 'Cold' tier qualification.

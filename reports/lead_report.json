@@ -1,75 +1,53 @@
 {
     "metrics": {
         "total_prospects": 5,
-        "qualified_prospects": 3,
-        "high_fit_buyers": 2,
+        "qualified_prospects": 0,
+        "high_fit_buyers": 0,
         "verified_contacts": 0,
-        "manual_review_required": 5
+        "outreach_generated": 0,
+        "blocked_funnel": {
+            "INSUFFICIENT_RESEARCH": 5
+        }
     },
     "top_opportunity": {
-        "company": "SEESEC",
-        "website": "https://seesec.io/",
-        "qualification_score": 50,
-        "qualification_tier": "Warm",
+        "company": "SAP",
+        "website": "https://www.sap.com",
+        "qualification_score": 0,
+        "qualification_tier": "Cold",
+        "blocked_reason": "INSUFFICIENT_RESEARCH",
         "buyer_fit": {
-            "buyer_fit": "Medium",
-            "buyer_type": "Partner",
+            "buyer_fit": "Low",
+            "buyer_type": "Unknown",
             "competitor_flag": false,
-            "partner_flag": true,
-            "reasoning": "SEESEC offers complementary services such as Cloud Migration, Cloud Optimization, Cloud Security, Data Analytics, and Gen AI Solutions, which can be integrated with AI Transformation Services, making them a potential partner.",
-            "outreach_allowed": true,
+            "partner_flag": false,
+            "reasoning": "Insufficient research data.",
+            "outreach_allowed": false,
             "disqualification_reason": ""
         },
         "research": {
-            "company": "SEESEC",
-            "website": "https://seesec.io/",
+            "company": "SAP",
+            "website": "https://www.sap.com",
             "industry": null,
-            "summary": "SEESEC empowers businesses to transform their operations with secure, cost-effective, and innovative solutions.",
-            "services": [
-                "Cloud Migration",
-                "Cloud Optimization",
-                "Cloud Security",
-                "Data Analytics",
-                "Gen AI Solutions",
-                "New-Age AI-Driven Business Communication Solutions"
-            ],
-            "pain_points": [
-                "cloud costs",
-                "customer response times",
-                "compliance adherence",
-                "operational efficiency"
-            ],
-            "signals": [
-                {
-                    "type": "Growth",
-                    "confidence": 80
-                }
-            ],
-            "ai_readiness": "High",
-            "research_confidence": 90,
-            "status": "Success"
+            "summary": null,
+            "services": [],
+            "pain_points": [],
+            "signals": [],
+            "ai_readiness": null,
+            "research_confidence": 0,
+            "status": "Insufficient information"
         },
         "qualification": {
-            "score": 50,
-            "tier": "Warm",
+            "score": 0,
+            "tier": "Cold",
             "score_breakdown": {
                 "industry_match": 0,
-                "ai_readiness": 40,
-                "signals": 10
+                "ai_readiness": 0,
+                "signals": 0
             },
-            "reasoning": "The company SEESEC received a score of 50 due to its high AI readiness and strong growth signals, with 80% growth indication. However, the lack of industry match with our Ideal Customer Profile (ICP) significantly impacted the overall score. Their diverse range of services, including cloud migration, cloud optimization, cloud security, data analytics, and AI-driven solutions, demonstrates their adaptability and potential for innovation. Despite this, the absence of a clear industry alignment according to our ICP criteria limited the score from reaching its full potential. Thus, the company is categorized as 'Warm', indicating potential but requiring further evaluation to determine the best course of action."
+            "reasoning": "SAP received a score of 0 due to the lack of information regarding their AI readiness and growth signals. Additionally, they do not match our Ideal Customer Profile (ICP) based on industry, resulting in a 'Cold' tier qualification."
         },
-        "contact": {
-            "company": "SEESEC",
-            "contact_name": null,
-            "title": null,
-            "linkedin_url": null,
-            "email": null,
-            "verification_level": "not_found",
-            "source_url": null,
-            "source_type": "none",
-            "contact_confidence": 0
-        },
+        "opportunity": null,
+        "contact": null,
         "outreach": null,
         "sequence": null
     }

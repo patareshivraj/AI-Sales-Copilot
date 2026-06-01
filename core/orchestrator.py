@@ -8,6 +8,7 @@ from agents.contact_discovery_agent import ContactDiscoveryAgent
 from agents.outreach_agent import OutreachAgent
 from agents.sequencer_agent import SequencerAgent
 from agents.opportunity_agent import OpportunityAgent
+from core.lead_db import LeadDatabase
 
 class SalesCopilotWorkflow:
     def __init__(self):
@@ -20,6 +21,7 @@ class SalesCopilotWorkflow:
         self.outreach_agent = OutreachAgent()
         self.sequencer_agent = SequencerAgent()
         self.opportunity_agent = OpportunityAgent()
+        self.lead_db = LeadDatabase()
 
     def run(self, query: str):
         print("\n=== STEP 1: ICP GENERATED ===")
@@ -32,8 +34,21 @@ class SalesCopilotWorkflow:
         print(f"Keywords: {icp.keywords}")
 
         print("\n=== STEP 2: PROSPECTS FOUND ===")
-        prospect_list = self.prospect_finder.find_prospects(icp, limit=5)
-        print(f"Discovered {len(prospect_list.prospects)} prospects matching the criteria.")
+        # Search for a larger batch to account for filtered leads
+        prospect_list = self.prospect_finder.find_prospects(icp, limit=15)
+        print(f"Discovered {len(prospect_list.prospects)} total prospects matching the criteria.")
+        
+        # Deduplication / State Management
+        seen_companies = self.lead_db.get_seen_companies()
+        new_prospects = [p for p in prospect_list.prospects if p.company not in seen_companies]
+        
+        # Limit to the top 5 NEW prospects
+        new_prospects = new_prospects[:5]
+        
+        print(f"Filtered out previously seen leads. Processing {len(new_prospects)} NEW prospects.")
+        
+        # Mark these new prospects as seen so they won't be processed tomorrow
+        self.lead_db.add_companies([p.company for p in new_prospects])
 
         final_report = {
             "query": query,
@@ -41,8 +56,8 @@ class SalesCopilotWorkflow:
             "prospects": []
         }
 
-        for i, p in enumerate(prospect_list.prospects):
-            print(f"\n--- STEP 3 & 4: RESEARCH & QUALIFICATION ({i+1}/{len(prospect_list.prospects)}) ---")
+        for i, p in enumerate(new_prospects):
+            print(f"\n--- STEP 3 & 4: RESEARCH & QUALIFICATION ({i+1}/{len(new_prospects)}) ---")
             print(f"Processing: {p.company} ({p.website})")
             
             research = self.researcher.research_company(p.company, p.website)
