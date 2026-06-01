@@ -145,11 +145,11 @@ The pipeline is organized into phases. Each phase was built, tested, and validat
 |---|---|---|---|---|
 | 1 | LLM Abstraction Layer | Centralizes all LLM calls with Pydantic structured output enforcement | API Keys, Model Config | Crash-resistant LLM Service |
 | 2 | ICP Builder Agent | Derives target industries, company sizes, decision-maker titles, regions, and search keywords from a raw business offering | Free-text business description | Structured ICP Profile |
-| 3 | Prospect Finder Agent | Searches DuckDuckGo using ICP-derived keywords and market type to discover real companies | ICP Profile | List of company names and URLs |
+| 3 | Prospect Finder Agent | Searches DuckDuckGo using randomized ICP-derived keywords to discover fresh companies | ICP Profile | List of company names and URLs |
 | 4 | Company Research Agent | Scrapes company websites via HTTP, cleans HTML, and uses the LLM to extract structured business intelligence | Company URL | Industry, services, signals, AI readiness, pain points |
 | 5 | Qualification Agent | Calculates a deterministic lead score using a rules engine, then uses the LLM solely to explain the score | ICP + Research | Score (0-100), Tier (Hot/Warm/Cold), Score Breakdown |
 | 5.5 | Buyer Fit Agent | Classifies the prospect as Potential Customer, Competitor, or Partner | Business offering + ICP + Research | Buyer type, competitor flag, outreach_allowed |
-| 6 | Orchestrator | Connects all agents into a single automated pipeline with gate logic | User query | End-to-end report |
+| 6 | Orchestrator & State Manager | Connects all agents into a pipeline. Uses `LeadDatabase` to filter out previously seen prospects, ensuring fresh leads on every run | User query | End-to-end report |
 | 7 | Outreach Agent | Drafts a personalized cold email and LinkedIn message grounded in research signals | Research + Qualification | Email, LinkedIn message, personalization reason |
 | 8 | Follow-Up Sequencer | Generates a 5-step follow-up campaign with distinct strategic angles per email | Research + Initial Outreach | 5 follow-up emails (Insight, Pain Point, Case Study, Value Recap, Breakup) |
 | 9 | Evaluation Framework | Measures ICP accuracy, qualification consistency, buyer fit precision, and hallucination rate | Test datasets | Scorecard JSON |
@@ -165,7 +165,7 @@ Every agent in the system is a standalone Python class with a single public meth
 | Agent | File | Method | LLM Usage | Deterministic Logic |
 |---|---|---|---|---|
 | ICP Builder | `agents/icp_builder.py` | `build_icp(query)` | Structured output generation | None |
-| Prospect Finder | `agents/prospect_finder.py` | `find_prospects(icp, limit)` | Structured output parsing of search results | Confidence scoring via keyword/industry match |
+| Prospect Finder | `agents/prospect_finder.py` | `find_prospects(icp, limit)` | Structured output parsing of search results | Query randomization for fresh leads |
 | Company Researcher | `agents/company_researcher.py` | `research_company(name, url)` | Content analysis from scraped HTML | HTTP scraping, HTML cleaning |
 | Qualification Agent | `agents/qualification_agent.py` | `qualify(icp, research)` | Reasoning explanation only | Full score calculation (industry match + AI readiness + signals) |
 | Buyer Fit Agent | `agents/buyer_fit_agent.py` | `evaluate(offering, icp, research)` | Competitor/partner/customer classification | outreach_allowed and disqualification_reason enforcement |
@@ -214,6 +214,7 @@ sales-copilot/
 |   |-- llm.py                  # LLM abstraction layer
 |   |-- config.py               # Centralized configuration
 |   |-- orchestrator.py         # Pipeline orchestrator with gate logic
+|   |-- lead_db.py              # Local JSON state management for de-duplication
 |
 |-- schemas/
 |   |-- icp_schema.py
@@ -436,7 +437,11 @@ Every agent input and output is a Pydantic model. This eliminates ambiguous data
 
 Outreach is never generated blindly. Every prospect must pass through five sequential gates (research quality, qualification tier, competitor check, buyer fit, verified contact) before the system writes a single word of email copy.
 
-### 5. Public Data Only
+### 5. State Management & De-duplication
+
+The system implements a local `LeadDatabase` (`outputs/seen_leads.json`) to persist state across runs. Once a company is processed, it is marked as seen. Combined with dynamic keyword randomization in the Prospect Finder, this mathematically guarantees that the system will never process the same lead twice, solving the problem of short-term static search engine results.
+
+### 6. Public Data Only
 
 The system operates exclusively on publicly accessible data sources. No private APIs, no authenticated scraping, no LinkedIn login bypass.
 
