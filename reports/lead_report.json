@@ -1,0 +1,59 @@
+{
+    "metrics": {
+        "total_prospects": 5,
+        "qualified_prospects": 2,
+        "high_fit_buyers": 1,
+        "verified_contacts": 0,
+        "manual_review_required": 5
+    },
+    "top_opportunity": {
+        "company": "IPH Technologies",
+        "website": "https://www.iphtechnologies.com/",
+        "qualification_score": 15,
+        "qualification_tier": "Cold",
+        "buyer_fit": {
+            "buyer_fit": "Medium",
+            "buyer_type": "Potential Customer",
+            "competitor_flag": false,
+            "partner_flag": true,
+            "reasoning": "IPH Technologies offers complementary services such as app development and custom software development, which can be enhanced with AI transformation services, making them a potential customer and partner.",
+            "outreach_allowed": true,
+            "disqualification_reason": ""
+        },
+        "research": {
+            "company": "IPH Technologies",
+            "website": "https://www.iphtechnologies.com/",
+            "industry": "IT",
+            "summary": "IPH Technologies is a cutting-edge app development company that specializes in creating customized digital solutions.",
+            "services": [
+                "Mobile App Development",
+                "Desktop App Development",
+                "Web Development",
+                "Custom Software Development",
+                "Cloud Development"
+            ],
+            "pain_points": [],
+            "signals": [
+                {
+                    "type": "Growth",
+                    "confidence": 90
+                }
+            ],
+            "ai_readiness": "Low",
+            "research_confidence": 80,
+            "status": "Success"
+        },
+        "qualification": {
+            "score": 15,
+            "tier": "Cold",
+            "score_breakdown": {
+                "industry_match": 0,
+                "ai_readiness": 5,
+                "signals": 10
+            },
+            "reasoning": "IPH Technologies received a score of 15 out of 100 due to their low AI readiness and lack of industry match with our Ideal Customer Profile (ICP). Although they exhibit strong growth signals at 90%, their limited AI adoption and non-aligned industry specialization hinder their potential as a viable prospect, resulting in a 'Cold' tier classification."
+        },
+        "outreach": null,
+        "sequence": null
+    }
+}
