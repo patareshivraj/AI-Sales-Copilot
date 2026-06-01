@@ -19,9 +19,10 @@ Search Results:
 Rules:
 1. ONLY extract real companies that appear to match the ICP based on the snippets.
 2. Exclude software review sites, generic directories, or news aggregators unless they are the actual prospect.
-3. Estimate a 'confidence' score (0-100) based on how well the company snippet matches the ICP.
-4. Ensure the 'source' is set to 'DuckDuckGo'.
-5. Return up to {limit} companies. DO NOT invent or hallucinate companies.
+3. Calculate 'confidence' (0-100) deterministically: Industry Match (+40) + Keyword Match (+30) + Market/Location Match (+20) + Website Found (+10).
+4. Populate 'matched_keywords' with the exact keywords found in the snippet.
+5. Ensure the 'source' is set to 'DuckDuckGo'.
+6. Return up to {limit} companies. DO NOT invent or hallucinate companies.
 
 Extract the prospects now.
 """

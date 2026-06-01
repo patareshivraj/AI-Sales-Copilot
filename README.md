@@ -1,36 +1,39 @@
-# AI Sales Copilot 🚀
+# AI Sales Copilot
 
 An open-source AI Sales Copilot designed to assist B2B sales teams. The system leverages a multi-agent architecture to autonomously identify Ideal Customer Profiles (ICPs) and discover highly relevant enterprise prospects using public data and advanced LLMs.
 
 ---
 
-## 🏗️ Architecture & Phases
+## Architecture & Phases
 
 This project is being built in phases to ensure a robust, crash-resistant foundation.
 
-* **Phase 1: Foundation Layer** ✅
-  * A rock-solid LLM abstraction (`core/llm.py`) utilizing `langchain-groq` and `Pydantic`.
+* **Phase 1: Foundation Layer** (Complete)
+  * A robust LLM abstraction (`core/llm.py`) utilizing `langchain-groq` and `Pydantic`.
   * Guarantees structured JSON outputs and prevents LLM hallucination crashes.
-* **Phase 2: ICP Builder Agent** ✅
+* **Phase 2: ICP Builder Agent** (Complete)
   * Takes a raw business offering (e.g., "AI Transformation Services") and intelligently deduces the target industries, decision-makers, company size, market type, and search keywords.
-* **Phase 3: Prospect Finder Agent** ✅
+* **Phase 3: Prospect Finder Agent** (Complete)
   * Consumes the ICP profile and autonomously queries the web (via DuckDuckGo).
   * Extracts structured lists of real-world companies and assigns a dynamic AI confidence score (0-100) based on how well they match the ICP.
-* **Phase 4 & Beyond**: *(In Development)* Company Research, Qualification, and Automated Outreach Drafting.
+* **Phase 4: Company Research Agent** (Complete)
+  * Scrapes public website content to extract services, industry context, AI readiness, and pain points without hallucination.
+* **Phase 5 & Beyond**: (In Development) Lead Qualification, and Automated Outreach Drafting.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 * **Language**: Python 3
 * **LLM Orchestration**: LangChain, LangGraph
 * **Inference**: Groq API (High-speed Llama-3 generation)
 * **Data Validation**: Pydantic
 * **Search / Data Sourcing**: DuckDuckGo Search (`ddgs`)
+* **Web Scraping**: Requests, BeautifulSoup4
 
 ---
 
-## ⚙️ Setup Instructions
+## Setup Instructions
 
 ### 1. Clone the Repository
 ```bash
@@ -61,7 +64,7 @@ MODEL_NAME=llama-3.3-70b-versatile
 
 ---
 
-## 🧪 Running the Tests
+## Running the Tests
 
 The system is highly test-driven. You can validate the agents using the built-in test scripts:
 
@@ -80,10 +83,15 @@ python tests/test_icp.py
 python tests/test_prospect.py
 ```
 
+**Test the Company Researcher Agent:**
+```bash
+python tests/test_research.py
+```
+
 ---
 
-## 🛡️ Design Philosophy
+## Design Philosophy
 
 1. **No Hallucinations**: We enforce strict schema parsing using Pydantic. If an input is invalid, the system gracefully populates an `error` field rather than guessing.
-2. **Deterministic Handoffs**: Agents do not chat with each other in an open-ended way. Data flows via tightly typed JSON objects (e.g., `ICPProfile` -> `ProspectList`).
+2. **Deterministic Handoffs**: Agents do not chat with each other in an open-ended way. Data flows via tightly typed JSON objects.
 3. **Public Data Only**: The copilot strictly operates on publicly accessible search and website data. No private scraping or authenticated bypasses are utilized.
