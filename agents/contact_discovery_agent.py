@@ -16,9 +16,10 @@ Search Results:
 
 Rules:
 1. Extract the name, title, and linkedin_url ONLY if they explicitly appear in the search results.
-2. DO NOT invent or guess email addresses. If you do not see a literal email address (e.g. name@company.com), set email to null and verification_level to 'not_found'.
-3. If you find a name and valid LinkedIn URL, set verification_level to 'verified'.
-4. If no person is found, return nulls and 'not_found'.
+2. DO NOT invent or guess email addresses. If you do not see a literal email address, set email to null and verification_level to 'not_found'.
+3. Set 'source_url' to the exact link where you found the best match. Set 'source_type' to 'linkedin_search' if the source is LinkedIn.
+4. Set 'contact_confidence' (0-100) based on how well the title matches the Target Decision Makers and the company name.
+5. If no person is found, return nulls, 'not_found', 'none' for source, and 0 for confidence.
 
 Extract the contact now.
 """

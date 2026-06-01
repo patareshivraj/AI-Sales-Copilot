@@ -8,3 +8,6 @@ class Contact(BaseModel):
     linkedin_url: Optional[str] = Field(description="Public LinkedIn URL of the contact", default=None)
     email: Optional[str] = Field(description="Publicly found email address", default=None)
     verification_level: str = Field(description="'verified', 'inferred', or 'not_found'", default="not_found")
+    source_url: Optional[str] = Field(description="URL where the contact was found", default=None)
+    source_type: str = Field(description="E.g., 'linkedin_search', 'company_website', or 'none'", default="none")
+    contact_confidence: int = Field(description="Confidence (0-100) that this is the correct decision maker", default=0)

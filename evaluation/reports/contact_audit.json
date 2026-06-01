@@ -1,0 +1,90 @@
+{
+    "metrics": {
+        "total_companies_audited": 10,
+        "contact_found_rate_percent": 10.0,
+        "linkedin_found_rate_percent": 10.0,
+        "email_found_rate_percent": 0.0
+    },
+    "raw_results": [
+        {
+            "company": "Persistent Systems",
+            "contact_found": true,
+            "linkedin_found": true,
+            "email_found": false,
+            "source_url": "https://uk.linkedin.com/in/manish-bhushanuk",
+            "contact_confidence": 100
+        },
+        {
+            "company": "Zensar",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "Infosys",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "TCS",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "Tech Mahindra",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "L&T Technology Services",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "Birlasoft",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "KPIT",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "Cybage",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        },
+        {
+            "company": "Coforge",
+            "contact_found": false,
+            "linkedin_found": false,
+            "email_found": false,
+            "source_url": null,
+            "contact_confidence": 0
+        }
+    ]
+}

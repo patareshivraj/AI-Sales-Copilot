@@ -64,20 +64,22 @@ class SalesCopilotWorkflow:
                 print("\n--- Phase 6: CONTACT DISCOVERY ---")
                 contact = self.contact_agent.find_contact(p.company, icp)
                 contact_data = contact.model_dump()
-                if contact.contact_name:
-                    print(f"Found Decision Maker: {contact.contact_name} ({contact.title})")
-                else:
-                    print("No verified decision maker found (Not Found).")
-
-                print("\n--- Phase 7: OUTREACH GENERATION ---")
-                outreach = self.outreach_agent.draft_outreach(research, qualified)
-                outreach_data = outreach.model_dump()
-                print("Outreach drafted successfully.")
                 
-                print("\n--- Phase 8: FOLLOW-UP SEQUENCER ---")
-                sequence = self.sequencer_agent.generate_sequence(research, outreach)
-                sequence_data = sequence.model_dump()
-                print("5-Step Sequence generated successfully.")
+                if contact.contact_name:
+                    print(f"Found Decision Maker: {contact.contact_name} ({contact.title}) [Confidence: {contact.contact_confidence}%]")
+                    
+                    print("\n--- Phase 7: OUTREACH GENERATION ---")
+                    outreach = self.outreach_agent.draft_outreach(research, qualified)
+                    outreach_data = outreach.model_dump()
+                    print("Outreach drafted successfully.")
+                    
+                    print("\n--- Phase 8: FOLLOW-UP SEQUENCER ---")
+                    sequence = self.sequencer_agent.generate_sequence(research, outreach)
+                    sequence_data = sequence.model_dump()
+                    print("5-Step Sequence generated successfully.")
+                else:
+                    print("No verified decision maker found. Manual Review Required.")
+                    print("\n--- Skipping Outreach (No Contact Discovered) ---")
             else:
                 print(f"\n--- Skipping Outreach ({buyer_fit.disqualification_reason} or Cold Tier) ---")
 
