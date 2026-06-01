@@ -134,7 +134,7 @@ export default function Dashboard() {
             <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
               <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Competitors Blocked</span>
               <span className="text-4xl font-semibold text-[var(--color-danger)]">
-                {Object.entries(report.blocked_reasons).find(([k]) => k === "COMPETITOR")?.[1] || 0}
+                {String(Object.entries(report.blocked_reasons).find(([k]) => k === "COMPETITOR")?.[1] || 0)}
               </span>
             </div>
             <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
