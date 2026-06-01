@@ -3,6 +3,8 @@ from agents.icp_builder import ICPBuilderAgent
 from agents.prospect_finder import ProspectFinderAgent
 from agents.company_researcher import CompanyResearcherAgent
 from agents.qualification_agent import QualificationAgent
+from agents.buyer_fit_agent import BuyerFitAgent
+from agents.outreach_agent import OutreachAgent
 
 class SalesCopilotWorkflow:
     def __init__(self):
@@ -10,6 +12,8 @@ class SalesCopilotWorkflow:
         self.prospect_finder = ProspectFinderAgent()
         self.researcher = CompanyResearcherAgent()
         self.qualifier = QualificationAgent()
+        self.buyer_fit_agent = BuyerFitAgent()
+        self.outreach_agent = OutreachAgent()
 
     def run(self, query: str):
         print("\n=== STEP 1: ICP GENERATED ===")
@@ -41,16 +45,31 @@ class SalesCopilotWorkflow:
             print(f"Research Status: {research.status}")
             
             qualified = self.qualifier.qualify(icp, research)
-            print(f"Result -> Score: {qualified.score}/100 | Tier: {qualified.tier}")
-            print(f"Reasoning: {qualified.reasoning}")
+            print(f"Qualification -> Score: {qualified.score}/100 | Tier: {qualified.tier}")
+
+            print("\n--- Phase 5.5: BUYER FIT EVALUATION ---")
+            buyer_fit = self.buyer_fit_agent.evaluate(query, icp, research)
+            print(f"Buyer Fit: {buyer_fit.buyer_fit} | Type: {buyer_fit.buyer_type}")
+            print(f"Is Competitor: {buyer_fit.competitor_flag}")
+
+            outreach_data = None
+            if not buyer_fit.competitor_flag and buyer_fit.buyer_fit != "Low" and qualified.tier != "Cold":
+                print("\n--- Phase 7: OUTREACH GENERATION ---")
+                outreach = self.outreach_agent.draft_outreach(research, qualified)
+                outreach_data = outreach.model_dump()
+                print("Outreach drafted successfully.")
+            else:
+                print("\n--- Skipping Outreach (Low Fit/Competitor/Cold) ---")
 
             final_report["prospects"].append({
                 "company": p.company,
                 "website": p.website,
                 "qualification_score": qualified.score,
                 "qualification_tier": qualified.tier,
+                "buyer_fit": buyer_fit.model_dump(),
                 "research": research.model_dump(),
-                "qualification": qualified.model_dump()
+                "qualification": qualified.model_dump(),
+                "outreach": outreach_data
             })
 
         print("\n=== STEP 5: FINAL REPORT GENERATED ===")
