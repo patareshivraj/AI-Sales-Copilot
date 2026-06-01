@@ -1,26 +1,43 @@
 # AI Sales Copilot
 
-An open-source AI Sales Copilot designed to assist B2B sales teams. The system leverages a multi-agent architecture to autonomously identify Ideal Customer Profiles (ICPs) and discover highly relevant enterprise prospects using public data and advanced LLMs.
+An enterprise-grade, open-source AI Sales Copilot designed to automate and scale B2B sales prospecting, research, and qualification. The system leverages a multi-agent architecture to autonomously identify Ideal Customer Profiles (ICPs), discover highly relevant enterprise prospects using public data, and perform deterministic qualification scoring.
 
 ---
 
-## Architecture & Phases
+## System Architecture
 
-This project is being built in phases to ensure a robust, crash-resistant foundation.
+The overarching design implements a sequential, state-driven workflow where agents pass tightly typed, validated JSON structures to one another. This eliminates open-ended agent "chatter" and enforces deterministic handoffs.
 
-* **Phase 1: Foundation Layer** (Complete)
-  * A robust LLM abstraction (`core/llm.py`) utilizing `langchain-groq` and `Pydantic`.
-  * Guarantees structured JSON outputs and prevents LLM hallucination crashes.
-* **Phase 2: ICP Builder Agent** (Complete)
-  * Takes a raw business offering (e.g., "AI Transformation Services") and intelligently deduces the target industries, decision-makers, company size, market type, and search keywords.
-* **Phase 3: Prospect Finder Agent** (Complete)
-  * Consumes the ICP profile and autonomously queries the web (via DuckDuckGo).
-  * Extracts structured lists of real-world companies and assigns a dynamic AI confidence score (0-100) based on how well they match the ICP.
-* **Phase 4: Company Research Agent** (Complete)
-  * Scrapes public website content to extract services, industry context, AI readiness, and pain points without hallucination.
-* **Phase 5 & Beyond**: (In Development) Lead Qualification, and Automated Outreach Drafting.
+```mermaid
+graph TD
+    A[User Input: Business Offering] --> B[Phase 2: ICP Builder Agent]
+    B -->|Structured ICP JSON| C[Phase 3: Prospect Finder Agent]
+    C -->|List of Companies & URLs| D[Phase 4: Company Research Agent]
+    D -->|Scraped Content & Signals| E[Phase 5: Qualification Agent]
+    E -->|Deterministic Score & LLM Reasoning| F[Qualified Lead Profile]
 
----
+    subgraph Core Abstraction
+    LLM[Phase 1: LLM Abstraction Layer]
+    end
+
+    B -.-> LLM
+    C -.-> LLM
+    D -.-> LLM
+    E -.-> LLM
+```
+
+## Project Scope and Agent Responsibilities
+
+The project is structured into discrete, highly decoupled phases. Each phase acts as a standalone module that can be tested and validated independently.
+
+| Phase | Module Name | Primary Input | Core Process | Output | Status |
+|---|---|---|---|---|---|
+| **Phase 1** | Foundation Layer | API Keys, Model Config | Centralizes all LLM interactions, enforcing structured output via Pydantic. | Crash-resistant LLM Service | Complete |
+| **Phase 2** | ICP Builder Agent | Raw Business Offering | Deduces target industries, decision-makers, company sizes, and search keywords. | Structured ICP Profile | Complete |
+| **Phase 3** | Prospect Finder Agent | Structured ICP Profile | Queries DuckDuckGo dynamically based on generated keywords and target markets. | List of Prospect URLs | Complete |
+| **Phase 4** | Company Research | Prospect URL | Scrapes website HTML, removes noise, and evaluates AI readiness and growth signals. | Extracted Company Context | Complete |
+| **Phase 5** | Qualification Agent | Research Context & ICP | Calculates deterministic lead score based on industry, AI readiness, and signals. | Tiered Score & Reasoning | Complete |
+| **Phase 6** | Orchestration | - | Connects all previous phases into a seamless automated pipeline. | End-to-End Pipeline | Pending |
 
 ## Technology Stack
 
@@ -33,7 +50,7 @@ This project is being built in phases to ensure a robust, crash-resistant founda
 
 ---
 
-## Setup Instructions
+## Setup and Configuration
 
 ### 1. Clone the Repository
 ```bash
@@ -64,9 +81,9 @@ MODEL_NAME=llama-3.3-70b-versatile
 
 ---
 
-## Running the Tests
+## Validation and Testing
 
-The system is highly test-driven. You can validate the agents using the built-in test scripts:
+The system is highly test-driven. You can validate the discrete agents using the built-in test scripts without running the entire pipeline.
 
 **Test the LLM Abstraction Layer:**
 ```bash
@@ -88,10 +105,16 @@ python tests/test_prospect.py
 python tests/test_research.py
 ```
 
+**Test the Qualification Agent:**
+```bash
+python tests/test_qualification.py
+```
+
 ---
 
 ## Design Philosophy
 
-1. **No Hallucinations**: We enforce strict schema parsing using Pydantic. If an input is invalid, the system gracefully populates an `error` field rather than guessing.
+1. **No Hallucinations**: We enforce strict schema parsing using Pydantic. If an input is invalid, or a website blocks access (via WAF/Captcha), the system gracefully populates an `error` field rather than guessing or fabricating data.
 2. **Deterministic Handoffs**: Agents do not chat with each other in an open-ended way. Data flows via tightly typed JSON objects.
-3. **Public Data Only**: The copilot strictly operates on publicly accessible search and website data. No private scraping or authenticated bypasses are utilized.
+3. **Hybrid Scoring**: Qualification scoring is deterministic (calculated mathematically via Python). The LLM is only utilized to explain the math in natural language, ensuring total transparency.
+4. **Public Data Only**: The copilot strictly operates on publicly accessible search and website data. No private scraping or authenticated bypasses are utilized.
