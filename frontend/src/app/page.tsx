@@ -122,102 +122,113 @@ export default function Dashboard() {
           className="flex flex-col gap-12"
         >
           {/* Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
-            <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
-              <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Prospects Found</span>
-              <span className="text-4xl font-semibold">{report.prospects.length}</span>
-            </div>
-            <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
-              <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Qualified (Warm/Hot)</span>
-              <span className="text-4xl font-semibold text-[var(--color-success)]">
-                {report.prospects.filter((p: any) => p.qualification_tier !== "Cold").length}
-              </span>
-            </div>
-            <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
-              <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Competitors Blocked</span>
-              <span className="text-4xl font-semibold text-[var(--color-danger)]">
-                {String(Object.entries(report.blocked_reasons).find(([k]) => k === "COMPETITOR")?.[1] || 0)}
-              </span>
-            </div>
-            <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
-              <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Outreach Ready</span>
-              <span className="text-4xl font-semibold text-[var(--color-accent)]">
-                {report.prospects.filter((p: any) => p.outreach !== null).length}
-              </span>
-            </div>
-          </div>
-
-          {/* Table & Funnel Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {(() => {
+            const blockedReasons = report.prospects.reduce((acc: Record<string, number>, p: any) => {
+              if (p.blocked_reason) acc[p.blocked_reason] = (acc[p.blocked_reason] || 0) + 1;
+              return acc;
+            }, {});
             
-            {/* Prospects Table */}
-            <div className="lg:col-span-2 bg-[#151D2A] p-6 flex flex-col gap-6">
-              <h2 className="text-lg font-medium tracking-tight">Intelligence Feed</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left font-mono">
-                  <thead className="text-xs text-[var(--color-text-secondary)] uppercase border-b border-[rgba(255,255,255,0.05)]">
-                    <tr>
-                      <th className="py-3 font-medium">Target Entity</th>
-                      <th className="py-3 font-medium">Score</th>
-                      <th className="py-3 font-medium">Buyer Fit</th>
-                      <th className="py-3 font-medium">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.prospects.map((lead: any, i: number) => (
-                      <tr key={i} className="border-b border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
-                        <td className="py-4">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-[var(--color-text-primary)]">{lead.company}</span>
-                            <a href={lead.website} target="_blank" rel="noreferrer" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-accent)]">{lead.website}</a>
-                          </div>
-                        </td>
-                        <td className="py-4">
-                          <span className={cn(
-                            "px-2 py-1 text-xs font-medium",
-                            lead.qualification_tier === "Hot" ? "text-[var(--color-success)] bg-[var(--color-success)]/10" : 
-                            lead.qualification_tier === "Warm" ? "text-[var(--color-warning)] bg-[var(--color-warning)]/10" : 
-                            "text-[var(--color-text-secondary)] bg-white/5"
-                          )}>
-                            {lead.qualification_score}/100
-                          </span>
-                        </td>
-                        <td className="py-4 text-[var(--color-text-secondary)]">{lead.buyer_fit?.buyer_type || "Unknown"}</td>
-                        <td className="py-4">
-                          <a href={`/opportunities/${i}`} className="text-[var(--color-accent)] hover:text-blue-400 flex items-center gap-1 text-xs uppercase tracking-widest font-bold">
-                            Inspect <ArrowRight className="h-3 w-3" />
-                          </a>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Blocked Funnel */}
-            <div className="bg-[#151D2A] p-6 flex flex-col">
-              <div className="flex items-center gap-2 mb-6">
-                <ShieldAlert className="h-5 w-5 text-[var(--color-warning)]" />
-                <h2 className="text-lg font-medium tracking-tight">Blocked Funnel</h2>
-              </div>
-              <div className="flex flex-col gap-1 flex-1">
-                {Object.entries(report.blocked_reasons).map(([reason, count]: any, i) => (
-                  <div key={reason} className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.02)]">
-                    <div className="flex items-center gap-2">
-                      <Ban className={cn("h-4 w-4", reason === "COMPETITOR" || reason === "NO_VERIFIED_CONTACT" ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]")} />
-                      <span className="text-xs font-mono text-[var(--color-text-secondary)]">{reason}</span>
-                    </div>
-                    <span className="text-sm font-mono font-medium">{count}</span>
+            return (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+                  <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
+                    <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Prospects Found</span>
+                    <span className="text-4xl font-semibold">{report.prospects.length}</span>
                   </div>
-                ))}
-                {Object.keys(report.blocked_reasons).length === 0 && (
-                  <div className="text-sm text-[var(--color-text-secondary)] italic p-3">No leads blocked.</div>
-                )}
-              </div>
-            </div>
+                  <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
+                    <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Qualified (Warm/Hot)</span>
+                    <span className="text-4xl font-semibold text-[var(--color-success)]">
+                      {report.prospects.filter((p: any) => p.qualification_tier !== "Cold").length}
+                    </span>
+                  </div>
+                  <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
+                    <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Competitors Blocked</span>
+                    <span className="text-4xl font-semibold text-[var(--color-danger)]">
+                      {blockedReasons["COMPETITOR"] || 0}
+                    </span>
+                  </div>
+                  <div className="bg-[#151D2A] p-6 flex flex-col gap-2">
+                    <span className="text-xs font-mono uppercase text-[var(--color-text-secondary)]">Outreach Ready</span>
+                    <span className="text-4xl font-semibold text-[var(--color-accent)]">
+                      {report.prospects.filter((p: any) => p.outreach !== null).length}
+                    </span>
+                  </div>
+                </div>
 
-          </div>
+                {/* Table & Funnel Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Prospects Table */}
+                  <div className="lg:col-span-2 bg-[#151D2A] p-6 flex flex-col gap-6">
+                    <h2 className="text-lg font-medium tracking-tight">Intelligence Feed</h2>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left font-mono">
+                        <thead className="text-xs text-[var(--color-text-secondary)] uppercase border-b border-[rgba(255,255,255,0.05)]">
+                          <tr>
+                            <th className="py-3 font-medium">Target Entity</th>
+                            <th className="py-3 font-medium">Score</th>
+                            <th className="py-3 font-medium">Buyer Fit</th>
+                            <th className="py-3 font-medium">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {report.prospects.map((lead: any, i: number) => (
+                            <tr key={i} className="border-b border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
+                              <td className="py-4">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-[var(--color-text-primary)]">{lead.company}</span>
+                                  <a href={lead.website} target="_blank" rel="noreferrer" className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-accent)]">{lead.website}</a>
+                                </div>
+                              </td>
+                              <td className="py-4">
+                                <span className={cn(
+                                  "px-2 py-1 text-xs font-medium",
+                                  lead.qualification_tier === "Hot" ? "text-[var(--color-success)] bg-[var(--color-success)]/10" : 
+                                  lead.qualification_tier === "Warm" ? "text-[var(--color-warning)] bg-[var(--color-warning)]/10" : 
+                                  "text-[var(--color-text-secondary)] bg-white/5"
+                                )}>
+                                  {lead.qualification_score}/100
+                                </span>
+                              </td>
+                              <td className="py-4 text-[var(--color-text-secondary)]">{lead.buyer_fit?.buyer_type || "Unknown"}</td>
+                              <td className="py-4">
+                                <a href={`/opportunities/${i}`} className="text-[var(--color-accent)] hover:text-blue-400 flex items-center gap-1 text-xs uppercase tracking-widest font-bold">
+                                  Inspect <ArrowRight className="h-3 w-3" />
+                                </a>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Blocked Funnel */}
+                  <div className="bg-[#151D2A] p-6 flex flex-col">
+                    <div className="flex items-center gap-2 mb-6">
+                      <ShieldAlert className="h-5 w-5 text-[var(--color-warning)]" />
+                      <h2 className="text-lg font-medium tracking-tight">Blocked Funnel</h2>
+                    </div>
+                    <div className="flex flex-col gap-1 flex-1">
+                      {Object.entries(blockedReasons).map(([reason, count]: any, i) => (
+                        <div key={reason} className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.02)]">
+                          <div className="flex items-center gap-2">
+                            <Ban className={cn("h-4 w-4", reason === "COMPETITOR" || reason === "NO_VERIFIED_CONTACT" ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]")} />
+                            <span className="text-xs font-mono text-[var(--color-text-secondary)]">{reason}</span>
+                          </div>
+                          <span className="text-sm font-mono font-medium">{count}</span>
+                        </div>
+                      ))}
+                      {Object.keys(blockedReasons).length === 0 && (
+                        <div className="text-sm text-[var(--color-text-secondary)] italic p-3">No leads blocked.</div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              </>
+            );
+          })()}
         </motion.div>
       )}
     </div>

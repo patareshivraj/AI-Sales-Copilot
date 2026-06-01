@@ -23,7 +23,10 @@ export default function ReportsPage() {
 
   const total = report.prospects?.length || 0;
   const qualified = report.prospects?.filter((p: any) => p.qualification_tier !== "Cold").length || 0;
-  const blocked = report.blocked_reasons || {};
+  const blocked = report.prospects?.reduce((acc: Record<string, number>, p: any) => {
+    if (p.blocked_reason) acc[p.blocked_reason] = (acc[p.blocked_reason] || 0) + 1;
+    return acc;
+  }, {}) || {};
 
   return (
     <div className="flex flex-col gap-10 pb-24">
