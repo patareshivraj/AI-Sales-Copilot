@@ -6,3 +6,6 @@ python-dotenv
 duckduckgo-search
 requests
 beautifulsoup4
+fastapi
+uvicorn
+trafilatura
