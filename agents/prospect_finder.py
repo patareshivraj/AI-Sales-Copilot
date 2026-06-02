@@ -1,7 +1,7 @@
 from schemas.icp_schema import ICPProfile
 from schemas.prospect_schema import ProspectList
 from core.llm import LLMService
-from core.search_manager import SearchManager
+from search.search_manager import SearchManager
 import random
 
 PROSPECT_PROMPT = """You are an expert Sales Prospecting Agent.
@@ -33,10 +33,10 @@ Return ONLY a JSON object matching the ProspectList schema.
 class ProspectFinderAgent:
     def __init__(self):
         self.llm = LLMService()
-        self.search = SearchManager()
+        self.search_manager = SearchManager()
 
     def find_prospects(self, icp: ICPProfile, limit: int = 15) -> ProspectList:
-        # Build varied search queries — randomize region to ensure fresh results each run
+        # Build varied search queries — randomize region for fresh results each run
         queries = []
         for kw in icp.keywords:
             if icp.regions:
@@ -45,29 +45,32 @@ class ProspectFinderAgent:
             else:
                 queries.append(f'"{kw}" companies {icp.market_type}')
 
-        # Use SearchManager: Cache → Brave → DuckDuckGo fallback
-        raw_results = self.search.search_batch(queries, max_results=10)
+        # Delegate entirely to SearchManager: Cache → Provider → Stale Cache → []
+        raw_results = self.search_manager.search_batch(queries, limit=10)
 
-        # Log provider metrics
-        metrics = self.search.get_metrics()
-        print(f"[SearchManager Metrics] {metrics}")
+        # Log session metrics after each batch
+        metrics = self.search_manager.get_session_metrics()
+        print(f"\n[SearchManager Metrics] cache_hits={metrics['cache_hits']} | "
+              f"provider_success={metrics['provider_success']} | "
+              f"provider_failures={metrics['provider_failure']} | "
+              f"cache_fallbacks={metrics['cache_fallback']} | "
+              f"hit_rate={metrics['cache_hit_rate_percent']}%")
 
-        # Format results for the LLM prompt
-        formatted_results = []
-        for r in raw_results:
-            formatted_results.append(
-                f"Title: {r.get('title')}\nLink: {r.get('href', '')}\nSnippet: {r.get('body')}\n---"
-            )
-
-        if not formatted_results:
-            print("[ProspectFinder] No search results returned from any provider.")
+        if not raw_results:
+            print("[ProspectFinder] No results from any source. Pipeline continues safely.")
             return ProspectList(prospects=[])
+
+        # Format for LLM prompt
+        formatted = [
+            f"Title: {r.get('title')}\nLink: {r.get('href', '')}\nSnippet: {r.get('body')}\n---"
+            for r in raw_results
+        ]
 
         prompt = PROSPECT_PROMPT.format(
             industries=", ".join(icp.industries),
             market_type=icp.market_type,
             keywords=", ".join(icp.keywords),
-            search_results="\n".join(formatted_results[:30]),
+            search_results="\n".join(formatted[:30]),
             limit=limit
         )
 
@@ -77,5 +80,5 @@ class ProspectFinderAgent:
                 return response
             return ProspectList(prospects=[])
         except Exception as e:
-            print(f"Agent error: {e}")
+            print(f"[ProspectFinder] Agent error: {e}")
             return ProspectList(prospects=[])

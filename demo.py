@@ -2,6 +2,7 @@ import json
 import csv
 import os
 from collections import Counter
+from search.search_manager import SearchManager
 
 def generate_demo_report():
     input_file = "outputs/final_report.json"
@@ -70,6 +71,22 @@ def generate_demo_report():
                 print(f"Why Now:")
                 for reason in opp["why_now"]:
                     print(f"  - {reason}")
+
+    # ── Search Reliability Metrics ────────────────────────────────────────────
+    print("\n--- Search Reliability Metrics ---")
+    sm = SearchManager()
+    metrics = sm.get_session_metrics()
+    cache_stats = metrics.get("cache_db_stats", {})
+    total_queries = metrics.get("total_queries", 0)
+    hit_rate = metrics.get("cache_hit_rate_percent", 0)
+    provider_failures = metrics.get("provider_failure", 0)
+    cache_fallbacks = metrics.get("cache_fallback", 0)
+
+    print(f"  Search Provider:       DuckDuckGo (primary)")
+    print(f"  Cached Entries (DB):   {cache_stats.get('total_entries', 0)} total / {cache_stats.get('fresh_entries', 0)} fresh")
+    print(f"  Session Cache Hit Rate:{hit_rate}%")
+    print(f"  Provider Failures:     {provider_failures}")
+    print(f"  Recovered From Cache:  {cache_fallbacks}")
         
     # Generate artifacts
     os.makedirs("reports", exist_ok=True)
