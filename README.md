@@ -252,6 +252,7 @@ sales-copilot/
 |-- api.py                      # FastAPI server with Swagger UI
 |-- main.py                     # CLI pipeline runner
 |-- demo.py                     # Demo report generator
+|-- API_INTEGRATION_GUIDE.md    # Guide for Frontend/Backend async API integration
 |-- requirements.txt
 |-- .env
 ```
@@ -321,8 +322,12 @@ Available endpoints:
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/v1/run` | Triggers the full pipeline with a custom query |
+| POST | `/api/v1/jobs` | Starts the multi-agent pipeline asynchronously and returns a job ID |
+| GET | `/api/v1/jobs/{job_id}` | Polls for job status (`processing`, `completed`, `failed`) |
+| GET | `/api/v1/jobs/{job_id}/results` | Returns the massive JSON report containing all prospects and scores |
 | GET | `/api/v1/reports/latest` | Returns the latest report metrics |
+
+> **Note**: For full integration instructions for frontend and backend developers, please see [API_INTEGRATION_GUIDE.md](API_INTEGRATION_GUIDE.md).
 
 ### Option C: Demo Report
 
@@ -338,7 +343,9 @@ Outputs: `reports/lead_report.md`, `reports/lead_report.json`, `reports/contacts
 
 ## API Reference
 
-### POST /api/v1/run
+### POST /api/v1/jobs
+
+Starts an asynchronous pipeline job.
 
 Request body:
 
@@ -347,6 +354,20 @@ Request body:
   "query": "We provide AI Transformation Services. Find potential customers in India."
 }
 ```
+
+Response structure:
+
+```json
+{
+  "job_id": "c8a4b89e-3d84-4e3a-9c92-7f394c5d6e11",
+  "status": "processing",
+  "message": "Job started in the background."
+}
+```
+
+### GET /api/v1/jobs/{job_id}/results
+
+Once the job status is `completed`, use this endpoint to fetch the full response.
 
 Response structure (per prospect):
 
