@@ -1,55 +1,11 @@
 {
     "metrics": {
-        "total_prospects": 5,
+        "total_prospects": 0,
         "qualified_prospects": 0,
         "high_fit_buyers": 0,
         "verified_contacts": 0,
         "outreach_generated": 0,
-        "blocked_funnel": {
-            "COLD_PROSPECT": 2,
-            "INSUFFICIENT_RESEARCH": 3
-        }
+        "blocked_funnel": {}
     },
-    "top_opportunity": {
-        "company": "Digital Nisar",
-        "website": "https://digitalnisar.in/",
-        "qualification_score": 0,
-        "qualification_tier": "Cold",
-        "blocked_reason": "INSUFFICIENT_RESEARCH",
-        "buyer_fit": {
-            "buyer_fit": "Low",
-            "buyer_type": "Unknown",
-            "competitor_flag": false,
-            "partner_flag": false,
-            "reasoning": "Insufficient research data.",
-            "outreach_allowed": false,
-            "disqualification_reason": ""
-        },
-        "research": {
-            "company": "Digital Nisar",
-            "website": "https://digitalnisar.in/",
-            "industry": null,
-            "summary": null,
-            "services": [],
-            "pain_points": [],
-            "signals": [],
-            "ai_readiness": null,
-            "research_confidence": 0,
-            "status": "Insufficient information"
-        },
-        "qualification": {
-            "score": 0,
-            "tier": "Cold",
-            "score_breakdown": {
-                "industry_match": 0,
-                "ai_readiness": 0,
-                "signals": 0
-            },
-            "reasoning": "Digital Nisar received a score of 0 due to the lack of information regarding their AI readiness and growth signals, coupled with the fact that they do not match our Ideal Customer Profile (ICP) in terms of industry. This suggests that they may not be a suitable fit for our solutions at this time."
-        },
-        "opportunity": null,
-        "contact": null,
-        "outreach": null,
-        "sequence": null
-    }
+    "top_opportunity": null
 }

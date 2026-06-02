@@ -197,26 +197,33 @@ All data contracts are defined as Pydantic models in the `schemas/` directory. E
 ## Project Structure
 
 ```
-sales-copilot/
+AI-Sales-Copilot/
 |
-|-- agents/
-|   |-- icp_builder.py
-|   |-- prospect_finder.py
-|   |-- company_researcher.py
-|   |-- qualification_agent.py
-|   |-- buyer_fit_agent.py
-|   |-- opportunity_agent.py
-|   |-- contact_discovery_agent.py
-|   |-- outreach_agent.py
-|   |-- sequencer_agent.py
+|-- agents/                         # All AI agents (one file = one agent)
+|   |-- icp_builder.py              # Builds Ideal Customer Profile from user query
+|   |-- prospect_finder.py          # Uses SearchManager to discover companies
+|   |-- company_researcher.py       # Scrapes and analyses company websites
+|   |-- qualification_agent.py      # Deterministic lead scoring engine
+|   |-- buyer_fit_agent.py          # Competitor/partner/customer classification
+|   |-- opportunity_agent.py        # 'Why Now' urgency signal extraction
+|   |-- contact_discovery_agent.py  # Public-source executive contact lookup
+|   |-- outreach_agent.py           # Personalized cold email + LinkedIn drafting
+|   |-- sequencer_agent.py          # 5-step follow-up email sequence
 |
-|-- core/
-|   |-- llm.py                  # LLM abstraction layer
-|   |-- config.py               # Centralized configuration
-|   |-- orchestrator.py         # Pipeline orchestrator with gate logic
-|   |-- lead_db.py              # Local JSON state management for de-duplication
+|-- search/                         # Phase 12.1 -- Reliability Layer
+|   |-- search_manager.py           # Cache-first orchestrator (Cache -> Provider -> Stale)
+|   |-- providers/
+|       |-- base_provider.py        # Abstract SearchProvider interface
+|       |-- duckduckgo_provider.py  # Active provider (DuckDuckGo)
+|       |-- brave_provider.py       # Stub -- ready to activate with BRAVE_API_KEY
 |
-|-- schemas/
+|-- core/                           # Shared infrastructure
+|   |-- llm.py                      # LLM abstraction layer with structured output
+|   |-- config.py                   # Centralized API key and model configuration
+|   |-- orchestrator.py             # Pipeline orchestrator with gate logic
+|   |-- lead_db.py                  # SQLite-backed lead deduplication state
+|
+|-- schemas/                        # Pydantic data models (one file = one schema)
 |   |-- icp_schema.py
 |   |-- prospect_schema.py
 |   |-- research_schema.py
@@ -227,13 +234,22 @@ sales-copilot/
 |   |-- outreach_schema.py
 |   |-- sequencer_schema.py
 |
-|-- evaluation/
-|   |-- datasets/               # Test datasets for benchmarking
-|   |-- reports/                # Generated scorecards
-|   |-- run_evaluation.py       # Automated evaluation script
-|   |-- contact_audit.py        # Contact discovery audit (10 companies)
+|-- evaluation/                     # Automated testing and benchmarking
+|   |-- run_evaluation.py           # Full pipeline evaluation scorecard
+|   |-- contact_audit.py            # Contact discovery audit (10 companies)
+|   |-- search_reliability_test.py  # Phase 12.1 reliability test (4 tests)
+|   |-- datasets/                   # Test datasets for benchmarking
 |
-|-- tests/
+|-- utils/
+|   |-- scraper.py                  # Trafilatura + BeautifulSoup website scraper
+|
+|-- database/
+|   |-- search_cache.db             # SQLite search result cache (7-day TTL)
+|
+|-- logs/
+|   |-- search.log                  # Structured search observability log
+|
+|-- tests/                          # Unit tests per agent
 |   |-- test_icp.py
 |   |-- test_prospect.py
 |   |-- test_research.py
@@ -241,18 +257,19 @@ sales-copilot/
 |   |-- test_sequencer.py
 |   |-- test_contact.py
 |
-|-- reports/                    # Generated demo reports
+|-- reports/                        # Auto-generated lead reports
 |   |-- lead_report.md
 |   |-- lead_report.json
 |   |-- contacts_found.csv
 |
-|-- outputs/                    # Raw pipeline output
+|-- outputs/                        # Raw pipeline JSON output
 |   |-- final_report.json
+|   |-- seen_leads.json             # Lead deduplication state
 |
-|-- api.py                      # FastAPI server with Swagger UI
-|-- main.py                     # CLI pipeline runner
-|-- demo.py                     # Demo report generator
-|-- API_INTEGRATION_GUIDE.md    # Guide for Frontend/Backend async API integration
+|-- api.py                          # FastAPI server (Swagger UI at /docs)
+|-- main.py                         # CLI pipeline runner
+|-- demo.py                         # Demo report with search reliability metrics
+|-- API_INTEGRATION_GUIDE.md        # Integration guide for Frontend/Backend teams
 |-- requirements.txt
 |-- .env
 ```
