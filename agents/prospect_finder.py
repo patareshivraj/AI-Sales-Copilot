@@ -69,7 +69,7 @@ class ProspectFinderAgent:
             
         prompt = PROSPECT_PROMPT.format(
             industries=", ".join(icp.industries),
-            market_type=icp.market_type,
+            market_type=market,
             keywords=", ".join(icp.keywords),
             search_results="\n".join(formatted_results[:30]), # Limit context size
             limit=limit

@@ -1,15 +1,16 @@
 # API Integration Guide: AI Sales Copilot
 
-This document is for the **Backend Engineer** integrating the AI Sales Copilot layer. 
+This document is for the **Frontend** and **Backend** engineers integrating the AI Sales Copilot layer. 
 
-Because the AI pipeline performs deep web scraping, LLM analysis, and searches, a single run can take **60-90 seconds**. Therefore, the AI layer uses an **Asynchronous Job Polling** architecture.
+Because the AI pipeline performs deep web scraping, LLM analysis, and searches, a single run can take **60-90 seconds**. Therefore, the AI layer now uses an **Asynchronous Job Polling** architecture. The frontend should never wait synchronously for a response.
 
 ---
 
-## Architecture Overview
+## Architecture Overview for the 3 Engineers
 
 1. **AI Engineer (This Layer)**: Hosts the FastAPI microservice (`api.py`) on a dedicated server or container.
-2. **Backend Engineer**: Acts as the consumer. Your Node/Java/Python backend will receive requests from your own frontend/clients, pass them to the AI Layer, store the `job_id` in your database, and periodically poll the AI Layer for completion. Once completed, your backend stores the results in your own database (PostgreSQL/MongoDB).
+2. **Backend Engineer**: Acts as the middleman. Your Node/Java/Python backend will receive requests from the Frontend, pass them to the AI Layer, store the `job_id` in your database, and periodically poll the AI Layer for completion. Once completed, your backend stores the results in your own database (PostgreSQL/MongoDB).
+3. **Frontend Engineer**: Builds the UI (React/Vue/Angular). Sends the initial query to the Backend, displays a loading spinner/progress bar, and polls the Backend until the results are ready to display.
 
 ---
 
@@ -96,7 +97,20 @@ Once the status is `completed`, call this to retrieve the massive JSON report co
 
 ## Instructions for Backend Engineer
 1. Do not expose the AI Layer directly to the public internet. Keep it in a private VPC.
-2. Create your own endpoints: `POST /api/generate-leads` and `GET /api/generate-leads/:id/status` for your clients.
-3. When a request comes in, forward the payload to the AI Layer's `POST /api/v1/jobs`. Save the returned `job_id` in your database.
+2. Create your own endpoints: `POST /api/generate-leads` and `GET /api/generate-leads/:id/status`.
+3. When the frontend hits your `POST`, forward the payload to the AI Layer's `POST /api/v1/jobs`. Save the returned `job_id` in your database.
 4. Set up a background worker or cron job to poll `GET /api/v1/jobs/{job_id}` every 5-10 seconds.
 5. When the status changes to `completed`, fetch the results from `GET /api/v1/jobs/{job_id}/results`, save the JSON payload into your database, and mark the job as done in your system.
+
+## Instructions for Frontend Engineer
+1. Build an input field for the "Business Query".
+2. When the user clicks "Generate", send the query to your Backend.
+3. Your Backend will reply with a Job ID.
+4. Show the user a **Loading State**. Explain that "The AI is searching the web and researching companies..." (This takes ~60-90 seconds).
+5. Poll your Backend every 3 seconds to check the status.
+6. Once the Backend says it's ready, fetch the final JSON and render it in a Dashboard. 
+
+**UI Rendering Tips for Frontend:**
+- **Blocked Reason:** If a prospect has a `blocked_reason` (e.g., `COMPETITOR`, `INSUFFICIENT_RESEARCH`, `NO_VERIFIED_CONTACT`), render them in a separate "Manual Review" or "Blocked" table.
+- **Outreach:** Only prospects with `blocked_reason: null` will have outreach emails.
+- **Score:** Display the `qualification_score` (0-100) prominently.

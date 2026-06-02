@@ -2,7 +2,6 @@ import uuid
 import json
 import os
 from fastapi import FastAPI, BackgroundTasks, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
@@ -13,14 +12,6 @@ app = FastAPI(
     title="AI Sales Copilot API",
     description="Enterprise Multi-Agent Lead Intelligence Engine",
     version="1.1.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows Next.js (localhost:3000) to communicate
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 # In-memory job store (in production, use Redis or Postgres)

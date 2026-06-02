@@ -84,8 +84,6 @@ class QualificationAgent:
         
         try:
             response = self.llm.generate_structured(prompt, Qualification)
-            if isinstance(response, str):
-                raise Exception(response)
             
             # Post-process: Enforce deterministic scores regardless of what LLM outputs
             response.score = score
