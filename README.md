@@ -34,33 +34,28 @@ The system implements a sequential, gate-controlled pipeline. Each agent receive
 ```mermaid
 graph TD
     A["User Query"] --> B["ICP Builder Agent"]
-    B -->|"Structured ICP JSON"| C["Prospect Finder Agent"]
-    C -->|"Company Names + URLs"| D["Company Research Agent"]
-    D -->|"Scraped Intelligence"| E["Qualification Agent"]
-    E -->|"Deterministic Score"| F["Buyer Fit Agent"]
-    F -->|"Customer / Competitor / Partner"| G["Opportunity Intelligence Agent"]
-    G -->|"Why Now Signals"| H["Gate Controller"]
-    H -->|"Passed All Gates"| I["Contact Discovery Agent"]
-    I -->|"Verified Contact"| J["Outreach Agent"]
-    J -->|"Cold Email + LinkedIn"| K["Follow-Up Sequencer"]
-    K --> L["Final Report"]
+    B -->|"Structured ICP JSON"| C["Apollo ICP Search Adapter"]
+    C -->|"Apollo Filters"| D["SearchManager (Prospect Discovery)"]
+    D -->|"Cache lookup"| E["SQLite Cache"]
+    D -->|"Query API"| F["Apollo Company Provider"]
+    D -->|"Fallback query"| G["DuckDuckGo Provider"]
+    D -->|"Company Names + URLs"| H["Company Research Agent"]
+    H -->|"Scraped Intelligence"| I["Qualification Agent"]
+    I -->|"Deterministic Score"| J["Buyer Fit Agent"]
+    J -->|"Customer / Competitor / Partner"| K["Opportunity Intelligence Agent"]
+    K -->|"Why Now Signals"| L["Gate Controller"]
+    L -->|"Passed All Gates"| M["Contact Discovery Agent"]
+    M -->|"Apollo People Search"| N["Apollo Provider"]
+    M -->|"Fallback LinkedIn query"| G
+    M -->|"Verified Contact"| O["Outreach Agent"]
+    O -->|"Cold Email + LinkedIn"| P["Follow-Up Sequencer"]
+    P --> Q["Human Review & Approval Gate (FastAPI API)"]
+    Q -->|"Approved Leads"| R["CRM Export (HubSpot & Salesforce CSV)"]
 
-    subgraph "Core Abstraction"
-        LLM["LLM Service (core/llm.py)"]
-    end
-
-    B -.->|"generate_structured()"| LLM
-    D -.->|"generate_structured()"| LLM
-    E -.->|"Reasoning Only"| LLM
-    F -.->|"Classification"| LLM
-    G -.->|"Signal Analysis"| LLM
-    I -.->|"Contact Extraction"| LLM
-    J -.->|"Email Drafting"| LLM
-    K -.->|"Sequence Generation"| LLM
-
-    style LLM fill:#1a1a2e,stroke:#e94560,color:#fff
-    style L fill:#0f3460,stroke:#e94560,color:#fff
-    style A fill:#16213e,stroke:#0f3460,color:#fff
+    style D fill:#533483,stroke:#e94560,color:#fff
+    style M fill:#533483,stroke:#e94560,color:#fff
+    style Q fill:#0f3460,stroke:#e94560,color:#fff
+    style R fill:#1a1a2e,stroke:#e94560,color:#fff
 ```
 
 ### Gate-Controlled Decision Flowchart
@@ -89,20 +84,22 @@ flowchart TD
     G5 -->|"Yes"| OA["Outreach Agent"]
 
     OA --> SEQ["Follow-Up Sequencer"]
-    SEQ --> REPORT["Final Report Generated"]
+    SEQ --> Q["Human Review Gate"]
+    Q -->|"Approved"| CRM["CRM Export Layer"]
 
     B1 --> MR["Manual Review Queue"]
     B2 --> MR
     B3 --> MR
     B4 --> MR
     B5 --> MR
+    Q -->|"Rejected"| MR
 
     style B1 fill:#e94560,stroke:#1a1a2e,color:#fff
     style B2 fill:#e94560,stroke:#1a1a2e,color:#fff
     style B3 fill:#e94560,stroke:#1a1a2e,color:#fff
     style B4 fill:#e94560,stroke:#1a1a2e,color:#fff
     style B5 fill:#e94560,stroke:#1a1a2e,color:#fff
-    style REPORT fill:#0f3460,stroke:#e94560,color:#fff
+    style CRM fill:#0f3460,stroke:#e94560,color:#fff
     style MR fill:#533483,stroke:#e94560,color:#fff
     style OA fill:#16213e,stroke:#0f3460,color:#fff
     style SEQ fill:#16213e,stroke:#0f3460,color:#fff
@@ -145,7 +142,7 @@ The pipeline is organized into phases. Each phase was built, tested, and validat
 |---|---|---|---|---|
 | 1 | LLM Abstraction Layer | Centralizes all LLM calls with Pydantic structured output enforcement | API Keys, Model Config | Crash-resistant LLM Service |
 | 2 | ICP Builder Agent | Derives target industries, company sizes, decision-maker titles, regions, and search keywords from a raw business offering | Free-text business description | Structured ICP Profile |
-| 3 | Prospect Finder Agent | Searches DuckDuckGo using randomized ICP-derived keywords to discover fresh companies | ICP Profile | List of company names and URLs |
+| 3 | Prospect Finder Agent | Searches Apollo and DuckDuckGo using randomized ICP-derived keywords to discover fresh companies | ICP Profile | List of company names and URLs |
 | 4 | Company Research Agent | Scrapes company websites via HTTP, cleans HTML, and uses the LLM to extract structured business intelligence | Company URL | Industry, services, signals, AI readiness, pain points |
 | 5 | Qualification Agent | Calculates a deterministic lead score using a rules engine, then uses the LLM solely to explain the score | ICP + Research | Score (0-100), Tier (Hot/Warm/Cold), Score Breakdown |
 | 5.5 | Buyer Fit Agent | Classifies the prospect as Potential Customer, Competitor, or Partner | Business offering + ICP + Research | Buyer type, competitor flag, outreach_allowed |
@@ -153,8 +150,14 @@ The pipeline is organized into phases. Each phase was built, tested, and validat
 | 7 | Outreach Agent | Drafts a personalized cold email and LinkedIn message grounded in research signals | Research + Qualification | Email, LinkedIn message, personalization reason |
 | 8 | Follow-Up Sequencer | Generates a 5-step follow-up campaign with distinct strategic angles per email | Research + Initial Outreach | 5 follow-up emails (Insight, Pain Point, Case Study, Value Recap, Breakup) |
 | 9 | Evaluation Framework | Measures ICP accuracy, qualification consistency, buyer fit precision, and hallucination rate | Test datasets | Scorecard JSON |
-| 10.5 | Contact Discovery Agent | Searches public sources for decision-maker names and LinkedIn profiles | Company name + ICP decision-maker titles | Contact name, title, LinkedIn URL, confidence |
+| 10.5 | Contact Discovery Agent | Searches Apollo People database (falling back to DDG/LinkedIn) for decision-maker profiles | Company name + ICP decision-maker titles | Contact name, title, LinkedIn URL, apollo_id, confidence |
 | 12 | Opportunity Intelligence | Analyzes research signals to answer "Why should we target this company right now?" | Research + Qualification | Why Now reasons, urgency level, recommended sales angle |
+| 14.3 | Apollo ICP Adapter | Translates raw ICP profiles to structured Apollo target filters (normalizing industries, headcounts, locations) | ICP Profile | Apollo organization filters JSON |
+| 14.4 | Apollo Prospect Discovery | Connects lead sourcing directly to Apollo's 275M+ company database, with cached and DDG fallbacks | Apollo Filters | Standardized prospects list |
+| 14.5 | Apollo Contact Discovery | Queries Apollo's `/mixed_people/api_search` to verify priority decision-makers | Company Name + Target Roles | Contact with `apollo_id` and `apollo_verified` level |
+| 14.7 | Contact Quality Dashboard | Generates a granular quality report displaying lead readiness and verification statuses | Job Results | Metrics dictionary |
+| 15.1 | CRM Export Layer | Maps approved contacts to HubSpot-compatible and Salesforce-compatible CSV imports | Approved Prospects | HubSpot/Salesforce format CSV files |
+| 15.2 | Human Approval Workflow | Provides API gateways for sales teams to inspect, edit, and approve/reject prospects | HTTP Actions | Updated outputs and CRM exports |
 
 ---
 
@@ -210,12 +213,15 @@ AI-Sales-Copilot/
 |   |-- outreach_agent.py           # Personalized cold email + LinkedIn drafting
 |   |-- sequencer_agent.py          # 5-step follow-up email sequence
 |
-|-- search/                         # Phase 12.1 -- Reliability Layer
+|-- search/                         # Phase 12.1 -- Reliability & Provider Layer
 |   |-- search_manager.py           # Cache-first orchestrator (Cache -> Provider -> Stale)
+|   |-- apollo_icp_adapter.py       # Phase 14.3 -- Target profile adapter
 |   |-- providers/
 |       |-- base_provider.py        # Abstract SearchProvider interface
 |       |-- duckduckgo_provider.py  # Active provider (DuckDuckGo)
 |       |-- brave_provider.py       # Stub -- ready to activate with BRAVE_API_KEY
+|       |-- apollo_provider.py      # Phase 14.1 -- Apollo People search provider
+|       |-- apollo_company_provider.py # Phase 14.2 -- Apollo Company search provider
 |
 |-- core/                           # Shared infrastructure
 |   |-- llm.py                      # LLM abstraction layer with structured output
@@ -238,16 +244,22 @@ AI-Sales-Copilot/
 |   |-- run_evaluation.py           # Full pipeline evaluation scorecard
 |   |-- contact_audit.py            # Contact discovery audit (10 companies)
 |   |-- search_reliability_test.py  # Phase 12.1 reliability test (4 tests)
+|   |-- test_apollo_icp_adapter.py  # Unit tests for ICP Adapter
+|   |-- test_apollo_prospect_discovery.py # Integration tests for Apollo Company search
+|   |-- test_apollo_contact_discovery.py # Integration tests for Apollo Contact search
+|   |-- test_crm_and_approval.py    # Unit & Integration tests for CRM exporter/approvals
 |   |-- datasets/                   # Test datasets for benchmarking
 |
 |-- utils/
 |   |-- scraper.py                  # Trafilatura + BeautifulSoup website scraper
+|   |-- crm_exporter.py             # Phase 15.1 -- HubSpot / Salesforce CSV exporter
 |
 |-- database/
 |   |-- search_cache.db             # SQLite search result cache (7-day TTL)
 |
 |-- logs/
 |   |-- search.log                  # Structured search observability log
+|   |-- apollo.log                  # Structured Apollo API query traces
 |
 |-- tests/                          # Unit tests per agent
 |   |-- test_icp.py
@@ -257,10 +269,13 @@ AI-Sales-Copilot/
 |   |-- test_sequencer.py
 |   |-- test_contact.py
 |
-|-- reports/                        # Auto-generated lead reports
-|   |-- lead_report.md
-|   |-- lead_report.json
-|   |-- contacts_found.csv
+|-- reports/                        # Auto-generated lead reports & CRM exports
+|   |-- lead_report.md              # Human-readable markdown summary
+|   |-- lead_report.json            # Machine-readable metric JSON
+|   |-- contacts_found.csv          # General contact master list
+|   |-- approved_leads.csv          # Human-approved contact master list
+|   |-- hubspot_import.csv          # Consolidated HubSpot-formatted CSV
+|   |-- salesforce_import.csv       # Consolidated Salesforce-formatted CSV
 |
 |-- outputs/                        # Raw pipeline JSON output
 |   |-- final_report.json
@@ -301,7 +316,7 @@ source .venv/bin/activate
 
 ```bash
 pip install -r requirements.txt
-pip install fastapi uvicorn
+pip install fastapi uvicorn httpx
 ```
 
 ### 4. Configure Environment Variables
@@ -311,6 +326,7 @@ Create a `.env` file in the project root:
 ```env
 GROQ_API_KEY=your_groq_api_key
 MODEL_NAME=llama-3.3-70b-versatile
+APOLLO_API_KEY=your_apollo_api_key
 ```
 
 ---
@@ -342,6 +358,9 @@ Available endpoints:
 | POST | `/api/v1/jobs` | Starts the multi-agent pipeline asynchronously and returns a job ID |
 | GET | `/api/v1/jobs/{job_id}` | Polls for job status (`processing`, `completed`, `failed`) |
 | GET | `/api/v1/jobs/{job_id}/results` | Returns the massive JSON report containing all prospects and scores |
+| GET | `/api/v1/jobs/{job_id}/review` | Retrieves discovered contacts and current approval states for human review |
+| POST | `/api/v1/jobs/{job_id}/review` | Submits approvals/rejections and contact edits, triggering CRM CSV updates |
+| GET | `/api/v1/jobs/{job_id}/dashboard` | Returns the Contact Quality Dashboard metrics for a specific run |
 | GET | `/api/v1/reports/latest` | Returns the latest report metrics |
 
 > **Note**: For full integration instructions for frontend and backend developers, please see [API_INTEGRATION_GUIDE.md](API_INTEGRATION_GUIDE.md).
@@ -529,11 +548,21 @@ These are engineering constraints, not bugs. Each is understood and documented.
 
 | Limitation | Root Cause | Impact | Mitigation Path |
 |---|---|---|---|
-| Contact discovery rate is approximately 10% | Free DuckDuckGo search is heavily rate-limited and rarely surfaces executive profiles | Most prospects are tagged `NO_VERIFIED_CONTACT` and require manual review | Integrate Apollo.io, Hunter.io, or Clearbit API for production-grade contact enrichment |
-| Email verification is not supported | Public search results almost never expose verified executive email addresses | `email` field returns `null` for all contacts | Requires a dedicated email verification service (Hunter, ZeroBounce) |
+| Email verification is not supported | Public search results and basic API searches rarely expose verified live deliverable addresses without dedicated verification steps | `email` field returns `null` for unverified contacts | Requires a dedicated email verification service (Hunter, ZeroBounce) |
 | Prospect discovery depends on search engine availability | DuckDuckGo occasionally rate-limits or returns DNS errors | Some pipeline runs discover fewer prospects than expected | Add retry logic, implement search provider fallback, or use a paid search API |
 | Industry classification can be imprecise | Company websites do not always state their industry explicitly | Some prospects may receive `industry: null`, affecting the qualification score | Cross-reference with industry databases or business registries |
-| No CRM integration | Out of scope for POC | Qualified leads must be manually exported via CSV | Build CRM sync module (Salesforce, HubSpot) in a future phase |
+| Enrichment API restrictions | Current Apollo plan is restricted to search queries and does not grant enrichment access | Unable to acquire direct emails and phone numbers programmatically | Upgrade Apollo subscription tier or supply a premium enrichment token |
+
+---
+
+## Completed Milestones (Milestones Achieved)
+
+The following pipeline upgrades have been successfully integrated into the platform:
+
+*   **Enterprise Contact Sourcing (Apollo.io Integration)**: Replaced weak public web searches with structured company and contact lookups against Apollo’s 27.5M+ B2B data catalog. Added robust DuckDuckGo fallback queries for resilience.
+*   **CRM Export Layer (HubSpot + Salesforce)**: Programmatic mapping of verified, hot/warm opportunities to CSV import templates ready for direct upload into HubSpot and Salesforce.
+*   **Human Approval Workflow (FastAPI Gateway)**: Exposed structured review routes allowing sales reps to inspect, edit, and approve/reject prospective leads before updating active exports.
+*   **Contact Quality Dashboard**: A statistical reporting system monitoring lead distribution, fit metrics, and verification states for stakeholders.
 
 ---
 
@@ -541,15 +570,7 @@ These are engineering constraints, not bugs. Each is understood and documented.
 
 The following sections describe what has not yet been built, why it matters, and the recommended priority order.
 
-### Priority 1: Enterprise Contact Enrichment
-
-**What**: Replace the current DuckDuckGo-based contact discovery with an enterprise API (Apollo.io, Hunter.io, or Clearbit).
-
-**Why it matters**: The contact discovery audit showed a 10% success rate using free public search. This is not an AI problem; it is a data availability problem. The agent logic is correct and does not hallucinate contacts. The data source is simply too weak for production use. Enterprise contact APIs would push this rate above 80%.
-
-**Effort**: Low. The `ContactDiscoveryAgent` interface is already defined. The change is limited to swapping the DuckDuckGo search call with an API call and parsing the response into the existing `Contact` schema.
-
-### Priority 2: Email Verification Layer
+### Priority 1: Email Verification Layer
 
 **What**: Add a verification step after contact discovery that confirms the discovered email address is deliverable.
 
@@ -557,7 +578,7 @@ The following sections describe what has not yet been built, why it matters, and
 
 **Effort**: Low. This is a single API call inserted between contact discovery and outreach generation.
 
-### Priority 3: LangGraph Migration
+### Priority 2: LangGraph Migration
 
 **What**: Replace the current linear Python orchestrator (`core/orchestrator.py`) with a LangGraph state machine.
 
@@ -565,23 +586,7 @@ The following sections describe what has not yet been built, why it matters, and
 
 **Effort**: Medium. The agent interfaces are already clean and decoupled. Migration would involve defining a LangGraph state schema and wiring existing agent methods as graph nodes.
 
-### Priority 4: Human Approval Workflow
-
-**What**: Add a human review step before outreach is sent. A reviewer would see the research, qualification, buyer fit, and opportunity intelligence, then approve or reject the outreach.
-
-**Why it matters**: Even with all safety gates, a human reviewer catches edge cases that automated systems miss (e.g., a company that is technically not a competitor but shares a key investor). This is standard practice in enterprise sales automation.
-
-**Effort**: Medium. Requires a simple web interface or Slack integration for approval routing.
-
-### Priority 5: CRM Integration
-
-**What**: Automatically push qualified leads, research data, and outreach drafts into Salesforce, HubSpot, or Pipedrive.
-
-**Why it matters**: Without CRM sync, the output of the pipeline lives in JSON files. Sales teams do not work in JSON. They work in CRM dashboards. Pushing data directly into the CRM eliminates manual data entry and ensures leads are immediately actionable.
-
-**Effort**: Medium. Requires OAuth setup and field mapping for the target CRM.
-
-### Priority 6: Multi-Provider LLM Support
+### Priority 3: Multi-Provider LLM Support
 
 **What**: Extend `core/llm.py` to support Ollama (local models), OpenAI, and Anthropic in addition to Groq.
 
@@ -589,7 +594,7 @@ The following sections describe what has not yet been built, why it matters, and
 
 **Effort**: Low. The abstraction layer already exists. Each new provider requires implementing the same interface.
 
-### Priority 7: Batch Processing and Rate Limit Management
+### Priority 4: Batch Processing and Rate Limit Management
 
 **What**: Add a queuing system that processes large prospect lists without hitting Groq or DuckDuckGo rate limits.
 
@@ -616,9 +621,9 @@ The following sections describe what has not yet been built, why it matters, and
 | LLM Provider | Groq (Llama 3.3 70B Versatile) |
 | LLM Orchestration | LangChain |
 | Data Validation | Pydantic |
-| Web Search | DuckDuckGo Search (ddgs) |
+| Web Search & APIs | Apollo.io REST APIs, DuckDuckGo Search (ddgs) |
 | Web Scraping | Requests, BeautifulSoup4 |
-| API Layer | FastAPI, Uvicorn |
+| API Layer | FastAPI, Uvicorn, HTTPX |
 | Configuration | python-dotenv |
 
 ---
