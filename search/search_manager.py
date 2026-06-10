@@ -214,6 +214,103 @@ class SearchManager:
         )
         return []
 
+    def search_prospects(self, icp: any, limit: int = 15) -> list[dict]:
+        """
+        Execute search prospects:
+        Apollo Company Search -> DuckDuckGo Fallback -> Cache -> []
+        """
+        from search.apollo_icp_adapter import translate_icp_to_apollo_payload
+        from search.providers.apollo_company_provider import ApolloCompanyProvider
+        
+        t_start = time.time()
+        
+        # 1. Translate ICP
+        try:
+            payload = translate_icp_to_apollo_payload(icp)
+        except Exception as e:
+            _logger.error(f"Failed to translate ICP: {e}")
+            payload = {}
+            
+        payload_key = "apollo_payload:" + json.dumps(payload, sort_keys=True)
+        
+        # Check cache (fresh) for Apollo payload
+        cached = self.cache.get(payload_key)
+        if cached:
+            _session_metrics["cache_hits"] += 1
+            duration = round(time.time() - t_start, 3)
+            _logger.info(
+                f"provider=cache_apollo | cache_hit=True | status=success | "
+                f"results={len(cached)} | duration={duration}s"
+            )
+            return cached
+            
+        _session_metrics["cache_misses"] += 1
+        
+        # Try live Apollo structured search
+        apollo_provider = ApolloCompanyProvider()
+        try:
+            results = apollo_provider.search_structured(payload, limit)
+            if results:
+                self.cache.set(payload_key, results)
+                _session_metrics["provider_success"] += 1
+                duration = round(time.time() - t_start, 3)
+                _logger.info(
+                    f"provider=apollo_company | cache_hit=False | status=success | "
+                    f"results={len(results)} | duration={duration}s"
+                )
+                return results
+        except Exception as e:
+            _session_metrics["provider_failure"] += 1
+            _logger.warning(f"Apollo company search failed: {e}")
+            
+        # Try stale cache fallback for Apollo payload
+        stale_apollo = self.cache.get_stale(payload_key)
+        if stale_apollo:
+            _session_metrics["cache_fallback"] += 1
+            duration = round(time.time() - t_start, 3)
+            _logger.info(
+                f"provider=stale_cache_apollo | cache_hit=True(stale) | status=recovered | "
+                f"results={len(stale_apollo)} | duration={duration}s"
+            )
+            return stale_apollo
+
+        # 2. DuckDuckGo Fallback
+        _logger.warning("Apollo search failed or empty. Falling back to DuckDuckGo.")
+        
+        # Retrieve keywords, regions, market_type
+        keywords = []
+        regions = []
+        market_type = ""
+        
+        if hasattr(icp, "model_dump"):
+            icp_dict = icp.model_dump()
+        elif hasattr(icp, "dict"):
+            icp_dict = icp.dict()
+        elif isinstance(icp, dict):
+            icp_dict = icp
+        else:
+            icp_dict = {}
+            
+        keywords = icp_dict.get("keywords") or []
+        regions = icp_dict.get("regions") or []
+        market_type = icp_dict.get("market") or icp_dict.get("market_type") or ""
+        
+        queries = []
+        for kw in keywords:
+            if regions:
+                import random
+                region = random.choice(regions)
+                queries.append(f'"{kw}" companies {market_type} {region}')
+            else:
+                queries.append(f'"{kw}" companies {market_type}')
+                
+        # search_batch uses fresh cache, live DDG, stale cache, or empty list
+        ddg_results = self.search_batch(queries, limit)
+        if ddg_results:
+            return ddg_results
+            
+        return []
+
     def search_batch(self, queries: list[str], limit: int = 10) -> list[dict]:
         """
         Run multiple queries and merge deduplicated results.

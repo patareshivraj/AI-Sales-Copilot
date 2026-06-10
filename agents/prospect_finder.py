@@ -1,5 +1,5 @@
 from schemas.icp_schema import ICPProfile
-from schemas.prospect_schema import ProspectList
+from schemas.prospect_schema import ProspectList, Prospect
 from core.llm import LLMService
 from search.search_manager import SearchManager
 import random
@@ -36,19 +36,10 @@ class ProspectFinderAgent:
         self.search_manager = SearchManager()
 
     def find_prospects(self, icp: ICPProfile, limit: int = 15) -> ProspectList:
-        # Build varied search queries — randomize region for fresh results each run
-        queries = []
-        for kw in icp.keywords:
-            if icp.regions:
-                region = random.choice(icp.regions)
-                queries.append(f'"{kw}" companies {icp.market_type} {region}')
-            else:
-                queries.append(f'"{kw}" companies {icp.market_type}')
+        # Delegate to search_prospects: Apollo Company Search -> DDG Fallback -> Cache -> []
+        raw_results = self.search_manager.search_prospects(icp, limit=limit)
 
-        # Delegate entirely to SearchManager: Cache → Provider → Stale Cache → []
-        raw_results = self.search_manager.search_batch(queries, limit=10)
-
-        # Log session metrics after each batch
+        # Log session metrics after execution
         metrics = self.search_manager.get_session_metrics()
         print(f"\n[SearchManager Metrics] cache_hits={metrics['cache_hits']} | "
               f"provider_success={metrics['provider_success']} | "
@@ -60,16 +51,29 @@ class ProspectFinderAgent:
             print("[ProspectFinder] No results from any source. Pipeline continues safely.")
             return ProspectList(prospects=[])
 
-        # Format for LLM prompt
+        # If results are from Apollo, map directly and bypass LLM
+        if raw_results and raw_results[0].get("source") == "Apollo":
+            prospects = []
+            for r in raw_results:
+                prospects.append(Prospect(
+                    company=r.get("company", ""),
+                    website=r.get("website", ""),
+                    source="Apollo",
+                    matched_keywords=icp.keywords[:2] if hasattr(icp, "keywords") else [],
+                    confidence=95
+                ))
+            return ProspectList(prospects=prospects)
+
+        # Otherwise, fall back to DuckDuckGo/SearchManager LLM processing
         formatted = [
             f"Title: {r.get('title')}\nLink: {r.get('href', '')}\nSnippet: {r.get('body')}\n---"
             for r in raw_results
         ]
 
         prompt = PROSPECT_PROMPT.format(
-            industries=", ".join(icp.industries),
-            market_type=icp.market_type,
-            keywords=", ".join(icp.keywords),
+            industries=", ".join(icp.industries) if hasattr(icp, "industries") else "",
+            market_type=icp.market_type if hasattr(icp, "market_type") else "",
+            keywords=", ".join(icp.keywords) if hasattr(icp, "keywords") else "",
             search_results="\n".join(formatted[:30]),
             limit=limit
         )
