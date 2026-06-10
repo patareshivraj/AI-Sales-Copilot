@@ -12,7 +12,7 @@ def test_apollo_auth():
     api_key = os.getenv("APOLLO_API_KEY")
     api_key_present = "PASS" if api_key else "FAIL"
 
-    endpoint = "https://api.apollo.io/api/v1/mixed_people/search"
+    endpoint = "https://api.apollo.io/api/v1/mixed_people/api_search"
     headers = {
         "Authorization": f"Bearer {api_key}" if api_key else "",
         "Content-Type": "application/json",
