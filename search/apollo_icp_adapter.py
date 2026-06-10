@@ -1,5 +1,4 @@
 import re
-import os
 from typing import Union, Dict, Any, List
 
 # Try to import ICPProfile, fallback to generic typing if needed
@@ -8,7 +7,56 @@ try:
 except ImportError:
     ICPProfile = Any
 
-# Standard Apollo Headcount Ranges
+# 1. Industry Mapping Table
+# Maps common industry inputs/synonyms to standard Apollo industry taxonomy
+INDUSTRY_MAPPING = {
+    "it": "information technology & services",
+    "it services": "information technology & services",
+    "information technology": "information technology & services",
+    "software": "computer software",
+    "saas": "computer software",
+    "tech": "computer software",
+    "technology": "computer software",
+    "healthcare": "hospital & health care",
+    "health": "hospital & health care",
+    "hospital": "hospital & health care",
+    "medical": "hospital & health care",
+    "finance": "financial services",
+    "fintech": "financial services",
+    "banking": "financial services",
+    "manufacturing": "manufacturing",
+    "automotive": "automotive",
+    "education": "education management",
+    "retail": "retail",
+    "marketing": "marketing & advertising",
+    "advertising": "marketing & advertising",
+    "staffing": "staffing & recruiting",
+    "recruiting": "staffing & recruiting",
+}
+
+# 2. Location Mapping Table
+# Maps common geographical terms, regions, and acronyms to Apollo geolocations
+LOCATION_MAPPING = {
+    "us": "United States",
+    "usa": "United States",
+    "united states": "United States",
+    "uk": "United Kingdom",
+    "united kingdom": "United Kingdom",
+    "in": "India",
+    "india": "India",
+    "bengaluru": "Bengaluru, Karnataka, India",
+    "bangalore": "Bengaluru, Karnataka, India",
+    "mumbai": "Mumbai, Maharashtra, India",
+    "delhi": "Delhi, India",
+    "singapore": "Singapore",
+    "eu": "Europe",
+    "europe": "Europe",
+    "apac": "Asia-Pacific",
+    "na": "North America",
+    "north america": "North America",
+}
+
+# 3. Employee Size Mapping (Apollo Range Taxonomy)
 APOLLO_RANGES = [
     (1, 10, "1,10"),
     (11, 50, "11,50"),
@@ -71,33 +119,63 @@ def translate_icp_to_apollo_payload(icp: Union[Dict[str, Any], Any]) -> Dict[str
     else:
         raise ValueError("ICP must be a dictionary or a Pydantic model.")
 
-    payload = {}
+    # Apply Mappings
+    
+    # 1. Industries Filter mapping
+    industries_input = icp_dict.get("industries") or []
+    mapped_industries = []
+    for ind in industries_input:
+        cleaned = ind.strip().lower()
+        if not cleaned:
+            continue
+        # Check in mapping table first, fallback to raw clean string
+        mapped_val = INDUSTRY_MAPPING.get(cleaned, cleaned)
+        mapped_industries.append(mapped_val)
 
-    # 1. Map Industries (case-insensitive in some versions, but we pass clean names)
-    industries = icp_dict.get("industries") or []
-    if industries:
-        payload["organization_industries"] = [ind.strip() for ind in industries if ind.strip()]
-
-    # 2. Map Regions/Locations
+    # 2. Locations Filter mapping (Region/Market)
+    locations_input = []
+    
+    # Check 'regions' field
     regions = icp_dict.get("regions") or []
-    # Ignore generic region terms that confuse geolocation filters
-    ignore_terms = {"global", "any", "worldwide", "remote"}
-    clean_regions = [r.strip() for r in regions if r.strip().lower() not in ignore_terms]
-    if clean_regions:
-        payload["organization_locations"] = clean_regions
+    if isinstance(regions, list):
+        locations_input.extend(regions)
+    elif isinstance(regions, str):
+        locations_input.append(regions)
+        
+    # Check 'market' or 'market_type' fields
+    market = icp_dict.get("market") or icp_dict.get("market_type") or ""
+    if market:
+        locations_input.append(market)
 
-    # 3. Parse and Map Employee ranges
+    ignore_terms = {"global", "any", "worldwide", "remote"}
+    mapped_locations = []
+    for loc in locations_input:
+        cleaned = loc.strip().lower()
+        if not cleaned or cleaned in ignore_terms:
+            continue
+        # Check mapping table first, fallback to raw clean string
+        mapped_val = LOCATION_MAPPING.get(cleaned, loc.strip())
+        if mapped_val not in mapped_locations:
+            mapped_locations.append(mapped_val)
+
+    # 3. Employee Ranges mapping
     company_size_str = icp_dict.get("company_size") or ""
     min_emp, max_emp = parse_company_size(company_size_str)
-    ranges = map_headcount_to_apollo_ranges(min_emp, max_emp)
-    if ranges:
-        payload["organization_num_employees_ranges"] = ranges
+    mapped_ranges = map_headcount_to_apollo_ranges(min_emp, max_emp)
 
-    # 4. Map Keywords
+    # 4. Keyword filter extraction
     keywords = icp_dict.get("keywords") or []
     clean_keywords = [k.strip() for k in keywords if k.strip()]
-    if clean_keywords:
-        # We use the first major keyword as the primary organization search query
-        payload["q_organization_keyword"] = clean_keywords[0]
+    keyword_val = clean_keywords[0] if clean_keywords else ""
+
+    # Build and return the payload with mapped fields
+    payload = {
+        "organization_industries": mapped_industries,
+        "organization_locations": mapped_locations,
+        "organization_num_employees_ranges": mapped_ranges,
+    }
+    
+    if keyword_val:
+        payload["q_organization_keyword"] = keyword_val
 
     return payload

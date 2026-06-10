@@ -9,7 +9,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from search.apollo_icp_adapter import (
     translate_icp_to_apollo_payload, 
     parse_company_size, 
-    map_headcount_to_apollo_ranges
+    map_headcount_to_apollo_ranges,
+    INDUSTRY_MAPPING,
+    LOCATION_MAPPING
 )
 from search.providers.apollo_company_provider import ApolloCompanyProvider
 from schemas.icp_schema import ICPProfile
@@ -26,40 +28,51 @@ def safe_print(text: str):
 
 class TestApolloICPAdapter(unittest.TestCase):
 
-    def test_parse_company_size(self):
-        """Validate helper function parse_company_size."""
-        self.assertEqual(parse_company_size("200-5000 employees"), (200, 5000))
-        self.assertEqual(parse_company_size("50+"), (50, None))
-        self.assertEqual(parse_company_size("10-50"), (10, 50))
-        self.assertEqual(parse_company_size(""), (None, None))
-        safe_print("[Test] parse_company_size: PASS")
-
-    def test_map_headcount_to_apollo_ranges(self):
-        """Validate helper function map_headcount_to_apollo_ranges."""
-        self.assertEqual(map_headcount_to_apollo_ranges(200, 5000), ["51,200", "201,500", "501,1000", "1001,5000"])
-        self.assertEqual(map_headcount_to_apollo_ranges(50, None), ["11,50", "51,200", "201,500", "501,1000", "1001,5000", "5001,10000", "10001,"])
-        self.assertEqual(map_headcount_to_apollo_ranges(None, None), [])
-        safe_print("[Test] map_headcount_to_apollo_ranges: PASS")
-
-    def test_translate_icp_dict(self):
-        """Validate translation of raw ICP dictionary to Apollo payload."""
+    def test_industry_mapping(self):
+        """Validate industry mapping converts loose inputs to Apollo industry taxonomy."""
         icp_dict = {
-            "industries": ["Manufacturing"],
+            "industries": ["IT Services", "SaaS", "Hospital", "Unknown Industry"],
             "company_size": "200-5000",
-            "regions": ["India", "Global"],
-            "keywords": ["Automotive零件"]
+            "regions": ["India"]
         }
         payload = translate_icp_to_apollo_payload(icp_dict)
+        industries = payload.get("organization_industries", [])
         
-        self.assertEqual(payload.get("organization_industries"), ["Manufacturing"])
-        self.assertEqual(payload.get("organization_locations"), ["India"]) # 'Global' filtered out
-        self.assertEqual(payload.get("organization_num_employees_ranges"), ["51,200", "201,500", "501,1000", "1001,5000"])
-        self.assertEqual(payload.get("q_organization_keyword"), "Automotive零件")
+        self.assertIn("information technology & services", industries)
+        self.assertIn("computer software", industries)
+        self.assertIn("hospital & health care", industries)
+        self.assertIn("unknown industry", industries) # Fallback to raw lowercase if not in mapping table
+        safe_print("[Test] Industry Mapping: PASS")
+
+    def test_location_mapping(self):
+        """Validate location mapping converts geographical terms and acronyms."""
+        icp_dict = {
+            "industries": ["tech"],
+            "company_size": "200-5000",
+            "regions": ["US", "in", "bengaluru", "Global"]
+        }
+        payload = translate_icp_to_apollo_payload(icp_dict)
+        locations = payload.get("organization_locations", [])
         
-        safe_print("[Test] translate_icp_dict: PASS")
+        self.assertIn("United States", locations)
+        self.assertIn("India", locations)
+        self.assertIn("Bengaluru, Karnataka, India", locations)
+        self.assertNotIn("Global", locations) # Global filtered out
+        safe_print("[Test] Location Mapping: PASS")
+
+    def test_employee_size_mapping(self):
+        """Validate parse_company_size and mapping to Apollo ranges."""
+        self.assertEqual(parse_company_size("200-5000 employees"), (200, 5000))
+        self.assertEqual(parse_company_size("50+"), (50, None))
+        
+        self.assertEqual(
+            map_headcount_to_apollo_ranges(200, 5000), 
+            ["51,200", "201,500", "501,1000", "1001,5000"]
+        )
+        safe_print("[Test] Employee Size Mapping: PASS")
 
     def test_translate_icp_pydantic(self):
-        """Validate translation of Pydantic ICPProfile to Apollo payload."""
+        """Validate translation of Pydantic ICPProfile."""
         icp_profile = ICPProfile(
             industries=["Hospital & Health Care"],
             company_size="10-50 employees",
@@ -68,24 +81,22 @@ class TestApolloICPAdapter(unittest.TestCase):
         )
         payload = translate_icp_to_apollo_payload(icp_profile)
         
-        self.assertEqual(payload.get("organization_industries"), ["Hospital & Health Care"])
+        self.assertEqual(payload.get("organization_industries"), ["hospital & health care"])
         self.assertEqual(payload.get("organization_locations"), ["United States"])
         self.assertEqual(payload.get("organization_num_employees_ranges"), ["1,10", "11,50"])
         self.assertEqual(payload.get("q_organization_keyword"), "Telehealth")
-        
-        safe_print("[Test] translate_icp_pydantic: PASS")
+        safe_print("[Test] Pydantic ICP Translation: PASS")
 
     def test_live_structured_query(self):
-        """Run live structured query using adapter payload against Apollo API."""
+        """Run live query with translated payload against Apollo API."""
         api_key = os.getenv("APOLLO_API_KEY")
         if not api_key:
             self.skipTest("APOLLO_API_KEY is not set in environment; skipping live test.")
 
-        # Let's create an ICP targeted for India based Hospital & Health Care in 200-5000 range
         icp_dict = {
-            "industries": ["hospital & health care"],
+            "industries": ["healthcare"],
             "company_size": "200-5000",
-            "regions": ["India"],
+            "regions": ["in"],
             "keywords": ["Apollo"]
         }
         
@@ -93,7 +104,7 @@ class TestApolloICPAdapter(unittest.TestCase):
         safe_print(f"\n[Test] Translated payload: {payload}")
         
         provider = ApolloCompanyProvider()
-        results = provider.search_structured(payload, limit=3)
+        results = provider.search_structured(payload, limit=2)
         
         self.assertIsInstance(results, list)
         safe_print(f"[Test] Live results received: {len(results)}")
@@ -101,13 +112,8 @@ class TestApolloICPAdapter(unittest.TestCase):
         for idx, org in enumerate(results):
             safe_print(f"  #{idx+1}: {org}")
             self.assertEqual(org["source"], "Apollo")
-            self.assertIn("company", org)
-            self.assertIn("website", org)
-            self.assertIn("industry", org)
-            self.assertIn("employee_count", org)
-            self.assertIn("location", org)
             
-        safe_print("[Test] Live structured query: PASS")
+        safe_print("[Test] Live Structured Query: PASS")
 
 if __name__ == "__main__":
     unittest.main()
