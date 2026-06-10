@@ -14,7 +14,7 @@ def test_apollo_auth():
 
     endpoint = "https://api.apollo.io/api/v1/mixed_people/api_search"
     headers = {
-        "Authorization": f"Bearer {api_key}" if api_key else "",
+        "x-api-key": api_key if api_key else "",
         "Content-Type": "application/json",
         "Cache-Control": "no-cache"
     }
