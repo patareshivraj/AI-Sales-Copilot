@@ -17,10 +17,27 @@ class ApolloCompanyProvider(SearchProvider):
 
     def search(self, query: str, limit: int = 10) -> list[dict]:
         """
-        Search using Apollo Organizations Search API.
+        Search using Apollo Organizations Search API (legacy text search).
         
         Args:
             query: The search term (mapped to q_organization_name).
+            limit: Maximum number of results to return.
+            
+        Returns:
+            List of dicts with keys: company, website, industry, employee_count, location, source.
+            Returns empty list [] on any failure.
+        """
+        payload = {
+            "q_organization_name": query
+        }
+        return self.search_structured(payload, limit)
+
+    def search_structured(self, payload: dict, limit: int = 10) -> list[dict]:
+        """
+        Search using structured filters (e.g. from apollo_icp_adapter).
+        
+        Args:
+            payload: Apollo API request payload body dictionary containing filters.
             limit: Maximum number of results to return.
             
         Returns:
@@ -39,15 +56,13 @@ class ApolloCompanyProvider(SearchProvider):
             "Cache-Control": "no-cache"
         }
         
-        # We search using query as q_organization_name or q_organization_keyword (or broad keywords)
-        payload = {
-            "q_organization_name": query,
-            "per_page": min(limit, 100)
-        }
+        # Ensure per_page is set correctly
+        payload_copy = dict(payload)
+        payload_copy["per_page"] = min(limit, 100)
 
         try:
             # Execute request with 10s timeout
-            response = requests.post(endpoint, json=payload, headers=headers, timeout=10)
+            response = requests.post(endpoint, json=payload_copy, headers=headers, timeout=10)
             
             # Log Rate Limits
             self._log_rate_limits(response.headers)
